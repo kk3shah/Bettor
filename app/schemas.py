@@ -63,6 +63,8 @@ class ValueBetsRequest(BaseModel):
 
 
 class ValueBet(BaseModel):
+    model_config = {'protected_namespaces': ()}
+    
     match_id: str
     player: str
     prop: str

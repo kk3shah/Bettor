@@ -235,7 +235,7 @@ def analyze_espn_based_markets(live_data: Dict, config: Dict) -> List[Dict]:
                     'goals_pg': player_stats.get('goals_pg', 0),
                     'yc_pg': player_stats.get('yc_pg', 0)
                 },
-                'reasoning': f"{model_prob:.1%} chance based on {player_stats['apps']} apps, avg {player_stats.get(f'{opp['market'].lower().replace(' ', '_').replace('player_', '').replace('anytime_goalscorer', 'goals')}_pg', 0):.1f}/game"
+                'reasoning': f"{model_prob:.1%} chance based on {player_stats['apps']} apps, avg {player_stats.get(opp['market'].lower().replace(' ', '_').replace('player_', '').replace('anytime_goalscorer', 'goals') + '_pg', 0):.1f}/game"
             })
     
     # Sort by confidence and probability
