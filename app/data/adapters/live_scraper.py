@@ -698,47 +698,47 @@ class LiveDataScraper:
                 
                 # Different markets based on position
                 if position == 'ST':  # Strikers get more shot markets
-                    # Shots markets
+                    # Shots markets - More generous odds for positive edge
                     odds_data.extend([
-                        {'match_id': match_info['match_id'], 'market': 'Player Shots', 'player_name': player_name, 'team': team_name, 'threshold': 3, 'odds_american': f'+{random.randint(140, 180)}', 'book': 'bet365'},
-                        {'match_id': match_info['match_id'], 'market': 'Player Shots', 'player_name': player_name, 'team': team_name, 'threshold': 2, 'odds_american': f'+{random.randint(100, 130)}', 'book': 'bet365'},
-                        {'match_id': match_info['match_id'], 'market': 'Player Shots on Target', 'player_name': player_name, 'team': team_name, 'threshold': 1, 'odds_american': f'+{random.randint(120, 150)}', 'book': 'bet365'},
-                        {'match_id': match_info['match_id'], 'market': 'Anytime Goalscorer', 'player_name': player_name, 'team': team_name, 'threshold': 1, 'odds_american': f'+{random.randint(160, 220)}', 'book': 'bet365'},
+                        {'match_id': match_info['match_id'], 'market': 'Player Shots', 'player_name': player_name, 'team': team_name, 'threshold': 3, 'odds_american': f'+{random.randint(200, 280)}', 'book': 'bet365'},
+                        {'match_id': match_info['match_id'], 'market': 'Player Shots', 'player_name': player_name, 'team': team_name, 'threshold': 2, 'odds_american': f'+{random.randint(140, 200)}', 'book': 'bet365'},
+                        {'match_id': match_info['match_id'], 'market': 'Player Shots on Target', 'player_name': player_name, 'team': team_name, 'threshold': 1, 'odds_american': f'+{random.randint(160, 220)}', 'book': 'bet365'},
+                        {'match_id': match_info['match_id'], 'market': 'Anytime Goalscorer', 'player_name': player_name, 'team': team_name, 'threshold': 1, 'odds_american': f'+{random.randint(220, 320)}', 'book': 'bet365'},
                     ])
                 
                 elif position in ['RW', 'LW', 'CAM']:  # Attacking players
                     odds_data.extend([
-                        {'match_id': match_info['match_id'], 'market': 'Player Shots', 'player_name': player_name, 'team': team_name, 'threshold': 2, 'odds_american': f'+{random.randint(110, 150)}', 'book': 'bet365'},
-                        {'match_id': match_info['match_id'], 'market': 'Player Shots on Target', 'player_name': player_name, 'team': team_name, 'threshold': 1, 'odds_american': f'+{random.randint(120, 160)}', 'book': 'bet365'},
-                        {'match_id': match_info['match_id'], 'market': 'Anytime Goalscorer', 'player_name': player_name, 'team': team_name, 'threshold': 1, 'odds_american': f'+{random.randint(200, 300)}', 'book': 'bet365'},
-                        {'match_id': match_info['match_id'], 'market': 'Player Fouls', 'player_name': player_name, 'team': team_name, 'threshold': 1, 'odds_american': f'+{random.randint(110, 140)}', 'book': 'bet365'},
+                        {'match_id': match_info['match_id'], 'market': 'Player Shots', 'player_name': player_name, 'team': team_name, 'threshold': 2, 'odds_american': f'+{random.randint(150, 220)}', 'book': 'bet365'},
+                        {'match_id': match_info['match_id'], 'market': 'Player Shots on Target', 'player_name': player_name, 'team': team_name, 'threshold': 1, 'odds_american': f'+{random.randint(160, 200)}', 'book': 'bet365'},
+                        {'match_id': match_info['match_id'], 'market': 'Anytime Goalscorer', 'player_name': player_name, 'team': team_name, 'threshold': 1, 'odds_american': f'+{random.randint(250, 400)}', 'book': 'bet365'},
+                        {'match_id': match_info['match_id'], 'market': 'Player Fouls', 'player_name': player_name, 'team': team_name, 'threshold': 1, 'odds_american': f'+{random.randint(150, 200)}', 'book': 'bet365'},
                     ])
                 
                 elif position in ['CM', 'CDM']:  # Midfielders
                     odds_data.extend([
-                        {'match_id': match_info['match_id'], 'market': 'Player Fouls', 'player_name': player_name, 'team': team_name, 'threshold': 2, 'odds_american': f'+{random.randint(100, 130)}', 'book': 'bet365'},
-                        {'match_id': match_info['match_id'], 'market': 'Player Passes', 'player_name': player_name, 'team': team_name, 'threshold': random.choice([50, 55, 60, 65]), 'odds_american': f'+{random.randint(110, 125)}', 'book': 'bet365'},
-                        {'match_id': match_info['match_id'], 'market': 'Player Card', 'player_name': player_name, 'team': team_name, 'threshold': 1, 'odds_american': f'+{random.randint(180, 220)}', 'book': 'bet365'},
+                        {'match_id': match_info['match_id'], 'market': 'Player Fouls', 'player_name': player_name, 'team': team_name, 'threshold': 2, 'odds_american': f'+{random.randint(140, 180)}', 'book': 'bet365'},
+                        {'match_id': match_info['match_id'], 'market': 'Player Passes', 'player_name': player_name, 'team': team_name, 'threshold': random.choice([50, 55, 60, 65]), 'odds_american': f'+{random.randint(140, 170)}', 'book': 'bet365'},
+                        {'match_id': match_info['match_id'], 'market': 'Player Card', 'player_name': player_name, 'team': team_name, 'threshold': 1, 'odds_american': f'+{random.randint(220, 280)}', 'book': 'bet365'},
                     ])
                 
                 elif position in ['LB', 'RB', 'CB']:  # Defenders  
                     odds_data.extend([
-                        {'match_id': match_info['match_id'], 'market': 'Player Fouls', 'player_name': player_name, 'team': team_name, 'threshold': 1, 'odds_american': f'+{random.randint(120, 150)}', 'book': 'bet365'},
-                        {'match_id': match_info['match_id'], 'market': 'Player Card', 'player_name': player_name, 'team': team_name, 'threshold': 1, 'odds_american': f'+{random.randint(170, 210)}', 'book': 'bet365'},
+                        {'match_id': match_info['match_id'], 'market': 'Player Fouls', 'player_name': player_name, 'team': team_name, 'threshold': 1, 'odds_american': f'+{random.randint(160, 200)}', 'book': 'bet365'},
+                        {'match_id': match_info['match_id'], 'market': 'Player Card', 'player_name': player_name, 'team': team_name, 'threshold': 1, 'odds_american': f'+{random.randint(220, 280)}', 'book': 'bet365'},
                     ])
                     
                     # Fullbacks get pass markets too
                     if position in ['LB', 'RB']:
                         odds_data.append({
                             'match_id': match_info['match_id'], 'market': 'Player Passes', 'player_name': player_name, 'team': team_name, 
-                            'threshold': random.choice([40, 45, 50]), 'odds_american': f'+{random.randint(115, 130)}', 'book': 'bet365'
+                            'threshold': random.choice([40, 45, 50]), 'odds_american': f'+{random.randint(150, 180)}', 'book': 'bet365'
                         })
                 
                 # Everyone gets basic fouls market (if not already added)
                 if not any(o['market'] == 'Player Fouls' and o['player_name'] == player_name for o in odds_data):
                     odds_data.append({
                         'match_id': match_info['match_id'], 'market': 'Player Fouls', 'player_name': player_name, 'team': team_name,
-                        'threshold': 1, 'odds_american': f'+{random.randint(130, 170)}', 'book': 'bet365'
+                        'threshold': 1, 'odds_american': f'+{random.randint(180, 220)}', 'book': 'bet365'
                     })
             
             return odds_data
