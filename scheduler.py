@@ -68,17 +68,40 @@ def run_maintenance():
     except Exception as e:
         print(f"❌ Maintenance error: {e}")
 
+def run_lineup_refresh():
+    """Run lineup-specific refresh for matches starting soon."""
+    print(f"⚽ Starting lineup refresh at {datetime.now()}")
+    try:
+        # Refresh matches starting in next 2 hours (covers the 55-min requirement)
+        result = subprocess.run([
+            sys.executable, 'batch_processor.py', 
+            '--hours', '2'
+        ], capture_output=True, text=True, timeout=1800)
+        
+        if result.returncode == 0:
+            print("✅ Lineup refresh completed")
+        else:
+            print("❌ Lineup refresh failed")
+            print(result.stderr)
+            
+    except subprocess.TimeoutExpired:
+        print("⏰ Lineup refresh timed out")
+    except Exception as e:
+        print(f"❌ Lineup refresh error: {e}")
+
 def main():
-    """Main scheduler loop."""
-    print("⏰ Bettor Scheduler Starting...")
-    print("📅 Daily batch: 06:00 UTC")
-    print("⚡ Quick updates: Every 2 hours")
+    """Main scheduler loop with enhanced timing for lineups."""
+    print("⏰ Bettor Premium Scheduler Starting...")
+    print("📅 Master refresh: 06:00 UTC (next 24 hours)")
+    print("⚽ Lineup refresh: Every hour (captures lineups 55min before)")
+    print("⚡ Quick updates: Every 2 hours (general updates)")
     print("🧹 Maintenance: Daily at 02:00 UTC")
     
-    # Schedule jobs
-    schedule.every().day.at("06:00").do(run_daily_batch)
-    schedule.every(2).hours.do(run_quick_update)
-    schedule.every().day.at("02:00").do(run_maintenance)
+    # Enhanced schedule for lineup requirements
+    schedule.every().day.at("06:00").do(run_daily_batch)  # Master refresh
+    schedule.every().hour.do(run_lineup_refresh)  # Hourly lineup checks
+    schedule.every(2).hours.do(run_quick_update)  # General updates
+    schedule.every().day.at("02:00").do(run_maintenance)  # Maintenance
     
     # Run initial quick update
     print("🚀 Running initial quick update...")

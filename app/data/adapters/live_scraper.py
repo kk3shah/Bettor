@@ -366,10 +366,42 @@ class LiveDataScraper:
             print(f"❌ ESPN match lineup parsing failed: {e}")
             return None
     
-    def get_confirmed_lineups_manual(self, home_team: str, away_team: str) -> List[Dict]:
-        """Get squad-based analysis when confirmed lineups not available (>1hr before kickoff)."""
-        print(f"⚽ Generating SQUAD-BASED analysis for {home_team} vs {away_team}...")
-        print("ℹ️ NOTE: Lineups released ~1hr before kickoff. Using likely starters from current squad.")
+    def get_confirmed_lineups_manual(self, home_team: str, away_team: str, kickoff_time=None) -> List[Dict]:
+        """Get lineup or squad-based analysis based on timing."""
+        
+        # Determine analysis type based on time to kickoff
+        if kickoff_time:
+            try:
+                from datetime import datetime, timezone
+                import dateutil.parser
+                
+                if isinstance(kickoff_time, str):
+                    match_time = dateutil.parser.parse(kickoff_time)
+                else:
+                    match_time = kickoff_time
+                    
+                if match_time.tzinfo is None:
+                    match_time = match_time.replace(tzinfo=timezone.utc)
+                
+                now = datetime.now(timezone.utc)
+                time_to_kickoff = (match_time - now).total_seconds() / 60  # minutes
+                
+                if time_to_kickoff <= 45:
+                    print(f"⚽ LINEUP-BASED analysis for {home_team} vs {away_team} (T-{int(time_to_kickoff)}min)")
+                    print("✅ Within 45min window - using confirmed lineups")
+                    analysis_type = "lineup"
+                else:
+                    print(f"⚽ SQUAD-BASED analysis for {home_team} vs {away_team} (T-{int(time_to_kickoff)}min)")  
+                    print("ℹ️ >45min before kickoff - using likely starters from squad")
+                    analysis_type = "squad"
+            except:
+                print(f"⚽ SQUAD-BASED analysis for {home_team} vs {away_team} (time unknown)")
+                print("ℹ️ Using likely starters from squad")
+                analysis_type = "squad"
+        else:
+            print(f"⚽ SQUAD-BASED analysis for {home_team} vs {away_team}")
+            print("ℹ️ Using likely starters from squad")
+            analysis_type = "squad"
         
         # Arsenal likely starting XI
         if 'arsenal' in home_team.lower():
