@@ -1,0 +1,11 @@
+match_id,kickoff_utc,home_team,away_team,player_name,team,is_starter,expected_minutes
+MCI-TOT-2025-08-23,2025-08-23T19:00:00Z,Man City,Tottenham,Erling Haaland,Man City,1,90
+MCI-TOT-2025-08-23,2025-08-23T19:00:00Z,Man City,Tottenham,Phil Foden,Man City,1,80
+MCI-TOT-2025-08-23,2025-08-23T19:00:00Z,Man City,Tottenham,Kevin De Bruyne,Man City,1,75
+MCI-TOT-2025-08-23,2025-08-23T19:00:00Z,Man City,Tottenham,Jack Grealish,Man City,1,70
+MCI-TOT-2025-08-23,2025-08-23T19:00:00Z,Man City,Tottenham,Rodri,Man City,1,85
+MCI-TOT-2025-08-23,2025-08-23T19:00:00Z,Man City,Tottenham,Harry Kane,Tottenham,1,90
+MCI-TOT-2025-08-23,2025-08-23T19:00:00Z,Man City,Tottenham,Son Heung-min,Tottenham,1,85
+MCI-TOT-2025-08-23,2025-08-23T19:00:00Z,Man City,Tottenham,Dejan Kulusevski,Tottenham,1,75
+MCI-TOT-2025-08-23,2025-08-23T19:00:00Z,Man City,Tottenham,James Maddison,Tottenham,1,80
+MCI-TOT-2025-08-23,2025-08-23T19:00:00Z,Man City,Tottenham,Yves Bissouma,Tottenham,1,70

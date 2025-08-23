@@ -1,0 +1,13 @@
+fastapi
+uvicorn
+pydantic
+pandas
+numpy
+scipy
+streamlit
+python-dotenv
+pytest
+requests
+beautifulsoup4
+lxml
+selenium
