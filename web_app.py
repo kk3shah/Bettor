@@ -15,7 +15,11 @@ from app.data.adapters.live_scraper import LiveDataScraper
 from app.services.multi_market import analyze_comprehensive_markets
 from app.services.earnings import calculate_expected_earnings
 from app.services.value import american_to_decimal
-from database import BettorDatabase
+try:
+    from database import BettorDatabase
+except ImportError:
+    print("⚠️ Database module not available, using fallback")
+    BettorDatabase = None
 
 app = Flask(__name__)
 
@@ -24,7 +28,7 @@ class BettorWebService:
     
     def __init__(self):
         self.scraper = LiveDataScraper()
-        self.db = BettorDatabase()
+        self.db = BettorDatabase() if BettorDatabase else None
     
     def get_upcoming_matches(self, hours_ahead=24):
         """Get upcoming matches from ALL major football leagues worldwide."""
@@ -242,7 +246,7 @@ class BettorWebService:
             # Try to find match ID by teams
             match_id = self._find_match_id(home_team, away_team)
             
-            if match_id:
+            if match_id and self.db:
                 # Check database first
                 print(f"📊 Checking database for existing analysis...")
                 existing_analysis = self.db.get_analysis_by_match(match_id)
@@ -330,8 +334,8 @@ class BettorWebService:
                 if i <= 8:
                     analysis_results["top_bets"].append(bet_info)
             
-            # Store new analysis in database if we have a match_id
-            if match_id:
+            # Store new analysis in database if we have a match_id and database
+            if match_id and self.db:
                 try:
                     self.db.store_analysis(match_id, analysis_results)
                     print(f"💾 Stored analysis in database")
@@ -348,6 +352,9 @@ class BettorWebService:
     
     def _find_match_id(self, home_team, away_team):
         """Find match ID by team names (fuzzy matching)."""
+        if not self.db:
+            return None
+            
         try:
             # Simple approach - look for recent matches with similar team names
             import sqlite3
@@ -423,6 +430,8 @@ def match_analysis(home_team, away_team):
 def get_stats():
     """API endpoint to get database statistics."""
     try:
+        if not bettor_service.db:
+            return jsonify({"message": "Database not available", "stats": {}})
         stats = bettor_service.db.get_database_stats()
         return jsonify(stats)
     except Exception as e:
@@ -432,6 +441,9 @@ def get_stats():
 def get_recent_analyses():
     """API endpoint to get recent analyses."""
     try:
+        if not bettor_service.db:
+            return jsonify({"message": "Database not available", "analyses": []})
+            
         limit = request.args.get('limit', 20, type=int)
         analyses = bettor_service.db.get_recent_analyses(limit)
         
@@ -457,13 +469,22 @@ def get_recent_analyses():
 def health_check():
     """Health check endpoint."""
     try:
-        stats = bettor_service.db.get_database_stats()
         from datetime import timezone
-        return jsonify({
+        
+        response = {
             "status": "healthy",
             "timestamp": datetime.now(timezone.utc).isoformat(),
-            "database_stats": stats
-        })
+            "database_available": bettor_service.db is not None
+        }
+        
+        if bettor_service.db:
+            try:
+                stats = bettor_service.db.get_database_stats()
+                response["database_stats"] = stats
+            except Exception as db_e:
+                response["database_error"] = str(db_e)
+        
+        return jsonify(response)
     except Exception as e:
         return jsonify({
             "status": "unhealthy", 

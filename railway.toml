@@ -5,9 +5,8 @@ builder = "NIXPACKS"
 healthcheckPath = "/api/health"
 healthcheckTimeout = 300
 restartPolicyType = "ON_FAILURE"
-startCommand = "python startup.py"
+startCommand = "python web_app.py"
 
 [env]
-PORT = "8080"
+PORT = "$PORT"
 PYTHONPATH = "/app"
-RAILWAY_ENVIRONMENT = "production"
