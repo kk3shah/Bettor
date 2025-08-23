@@ -3,3 +3,6 @@ match_id,home_team,away_team,league,kickoff_time,stored_at
 2,Brentford,Aston Villa,Premier League,2025-08-23T14:00:00,2025-08-23T13:22:35.107952
 3,Burnley,Sunderland,Premier League,2025-08-23T14:00:00,2025-08-23T13:22:35.116267
 4,Arsenal,Leeds United,Premier League,2025-08-23T16:30:00,2025-08-23T13:22:35.126663
+5,Crystal Palace,Nottingham Forest,Premier League,2025-08-24T13:00:00,2025-08-23T13:35:39.074635
+6,Everton,Brighton & Hove Albion,Premier League,2025-08-24T13:00:00,2025-08-23T13:35:39.088765
+7,Fulham,Manchester United,Premier League,2025-08-24T15:30:00,2025-08-23T13:35:39.098089
