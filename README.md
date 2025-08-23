@@ -1,14 +1,52 @@
-# ⚽ Football Player-Prop Betting MVP
+# 🎯 Bettor Premium - Global Football Betting Platform
 
-A comprehensive end-to-end system for calculating player prop probabilities and finding value betting opportunities in football (soccer) using statistical modeling.
+**🌍 FULLY AUTOMATED PUBLIC WEBSITE** - Deploy once, runs forever from anywhere!
 
-## 🎯 Overview
+A comprehensive football betting analysis platform covering **ALL major leagues worldwide** with automated daily processing and beautiful mobile interface.
 
-This MVP combines confirmed lineups, player statistics, and betting odds to:
-- **Calculate probabilities** for player props (shots ≥ N) using Poisson models
-- **Apply adjustments** for opponent strength, home/away advantage, and expected playing time
-- **Identify value bets** by comparing model probabilities with bookmaker odds
-- **Provide Kelly criterion** suggestions for optimal bet sizing
+## 🌐 **DEPLOY AS PUBLIC WEBSITE**
+
+✅ **Global Access** - Works from India, USA, anywhere in the world  
+✅ **Fully Automated** - Runs 24/7 without your intervention  
+✅ **42+ Live Matches** - Champions League, Premier League, La Liga, Serie A, etc.  
+✅ **Mobile Perfect** - Beautiful responsive design for all devices  
+✅ **Database Powered** - Instant results, no waiting for analysis  
+✅ **Free Deployment** - Deploy to Railway, Render, or Heroku for FREE
+
+## 🚀 **One-Click Deployment**
+
+Deploy your own global betting platform in 5 minutes:
+
+```bash
+# Clone the premium version
+git clone https://github.com/kk3shah/Bettor.git
+cd Bettor
+git checkout premium
+
+# Deploy using script
+chmod +x deploy.sh
+./deploy.sh
+```
+
+**Then deploy to Railway (FREE):**
+1. Go to [railway.app](https://railway.app)  
+2. Connect your GitHub repository
+3. Select the **premium** branch
+4. Deploy automatically!
+
+**Result:** Get a public URL like `https://bettor-xyz.railway.app`
+
+## 🤖 **Fully Automated System**
+
+Once deployed, the platform runs **completely automatically**:
+
+- **🌅 06:00 UTC Daily:** Analyzes ALL matches in next 24 hours
+- **⚡ Every 2 hours:** Quick updates for imminent matches  
+- **🗄️ Database Storage:** All results stored for instant access
+- **🧹 02:00 UTC Daily:** Automatic maintenance and cleanup
+- **📱 24/7 Website:** Always accessible from any device
+
+**You never need to run anything or keep programs open!**
 
 ## 🔥 LIVE BETTING ANALYSIS
 
