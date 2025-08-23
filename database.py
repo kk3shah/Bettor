@@ -78,6 +78,22 @@ class BettorDatabase:
                     created_at TEXT NOT NULL
                 )
             ''')
+            
+            # Real match data table for 12 AM UTC batch scraping
+            conn.execute('''
+                CREATE TABLE IF NOT EXISTS real_match_data (
+                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    match_id TEXT UNIQUE NOT NULL,
+                    home_team TEXT NOT NULL,
+                    away_team TEXT NOT NULL,
+                    league TEXT NOT NULL,
+                    kickoff_time TEXT NOT NULL,
+                    player_stats TEXT NOT NULL,
+                    betting_odds TEXT NOT NULL,
+                    scraped_at TEXT NOT NULL,
+                    is_active INTEGER DEFAULT 1
+                )
+            ''')
     
     def store_match(self, match_data):
         """Store match information."""
@@ -272,6 +288,112 @@ class BettorDatabase:
             stats['unique_leagues'] = cursor.fetchone()[0]
             
             return stats
+
+    def get_recent_matches(self, hours_ahead=8):
+        """Get matches from database for next X hours (instant response)."""
+        try:
+            with sqlite3.connect(self.db_path) as conn:
+                cursor = conn.cursor()
+                cursor.execute("""
+                    SELECT DISTINCT m.home_team, m.away_team, m.kickoff_time, m.league, 
+                           a.created_at
+                    FROM matches m
+                    JOIN analysis_results a ON m.id = a.match_id
+                    WHERE a.created_at > datetime('now', '-24 hours')
+                    ORDER BY a.created_at DESC
+                """)
+                
+                matches = []
+                for row in cursor.fetchall():
+                    home_team, away_team, kickoff_time, league, created_at = row
+                    matches.append({
+                        'id': f"{home_team}-{away_team}-cached",
+                        'home_team': home_team,
+                        'away_team': away_team,
+                        'kickoff': kickoff_time,
+                        'kickoff_full': kickoff_time,
+                        'league': league or 'Unknown',
+                        'data_source': 'DATABASE_CACHED',
+                        'cached_at': created_at
+                    })
+                
+                return matches
+                
+        except sqlite3.Error as e:
+            print(f"❌ Error getting recent matches: {e}")
+            return []
+    
+    def get_match_analysis(self, home_team, away_team):
+        """Get cached analysis for specific match (instant response)."""
+        try:
+            with sqlite3.connect(self.db_path) as conn:
+                cursor = conn.cursor()
+                cursor.execute("""
+                    SELECT a.analysis_data, a.created_at
+                    FROM analysis_results a
+                    JOIN matches m ON a.match_id = m.id
+                    WHERE m.home_team = ? AND m.away_team = ?
+                    ORDER BY a.created_at DESC
+                    LIMIT 1
+                """, (home_team, away_team))
+                
+                result = cursor.fetchone()
+                if result:
+                    analysis_data, timestamp = result
+                    analysis = json.loads(analysis_data)
+                    analysis['generated_at'] = timestamp
+                    return analysis
+                
+                return None
+                
+        except sqlite3.Error as e:
+            print(f"❌ Error getting match analysis: {e}")
+            return None
+    
+    def store_match_analysis(self, analysis_data):
+        """Store analysis data for a match (for daily populator)."""
+        try:
+            with sqlite3.connect(self.db_path) as conn:
+                cursor = conn.cursor()
+                
+                # Create match entry first
+                match_id = f"{analysis_data['home_team']}-{analysis_data['away_team']}-{datetime.now().strftime('%Y%m%d%H%M')}"
+                
+                cursor.execute("""
+                    INSERT OR REPLACE INTO matches 
+                    (id, home_team, away_team, league, league_id, kickoff_time, created_at)
+                    VALUES (?, ?, ?, ?, ?, ?, ?)
+                """, (
+                    match_id,
+                    analysis_data.get('home_team'),
+                    analysis_data.get('away_team'),
+                    analysis_data.get('league', 'Unknown'),
+                    analysis_data.get('league', 'unknown').lower().replace(' ', '_'),
+                    analysis_data.get('match_time', 'TBD'),
+                    datetime.now(timezone.utc).isoformat()
+                ))
+                
+                # Store analysis data
+                analysis_json = json.dumps(analysis_data, default=str)
+                
+                cursor.execute("""
+                    INSERT INTO analysis_results 
+                    (match_id, analysis_data, total_opportunities, created_at)
+                    VALUES (?, ?, ?, ?)
+                """, (
+                    match_id,
+                    analysis_json,
+                    analysis_data.get('total_opportunities', 0),
+                    datetime.now(timezone.utc).isoformat()
+                ))
+                
+                conn.commit()
+                print(f"✅ Stored analysis for {analysis_data['home_team']} vs {analysis_data['away_team']}")
+                return True
+                
+        except sqlite3.Error as e:
+            print(f"❌ Error storing match analysis: {e}")
+            return False
 
     def cleanup_old_data(self, days_to_keep=7):
         """Clean up old data to keep database size manageable."""

@@ -7,13 +7,15 @@ import sys
 import os
 from datetime import datetime, timedelta
 import json
+import sqlite3
 
 # Add project root to path
 sys.path.append(os.path.dirname(os.path.abspath(__file__)))
 
 from app.data.adapters.live_scraper import LiveDataScraper
-from app.services.multi_market import analyze_comprehensive_markets
-from app.services.earnings import calculate_expected_earnings
+from app.services.espn_analysis import analyze_espn_based_markets
+from data_manager import CSVDataManager
+
 from app.services.value import american_to_decimal
 try:
     from database import BettorDatabase
@@ -28,46 +30,83 @@ class BettorWebService:
     
     def __init__(self):
         self.scraper = LiveDataScraper()
+        self.csv_manager = CSVDataManager()
         self.db = BettorDatabase() if BettorDatabase else None
     
     def get_upcoming_matches(self, hours_ahead=24):
-        """Get upcoming matches from ALL major football leagues worldwide."""
+        """Get upcoming matches - CSV FIRST (instant), then generate if needed."""
+        print(f"🌍 Getting matches for next {hours_ahead} hours...")
+        
+        # PRIORITY 1: Check CSV cache first (INSTANT - no API calls)
+        cached_matches = self.csv_manager.get_matches()
+        if cached_matches:
+            print(f"⚡ Found {len(cached_matches)} cached matches (NO API CALLS)")
+            return cached_matches
+        
+        # PRIORITY 2: Generate and cache matches if CSV empty
+        print("📊 CSV empty - generating matches and caching...")
+        generated_matches = self.get_simulation_matches(hours_ahead)
+        
+        # Cache the matches for next time
+        if generated_matches:
+            self.csv_manager.store_matches(generated_matches)
+            print(f"💾 Cached {len(generated_matches)} matches to CSV")
+        
+        return generated_matches
+    
+    def get_real_data_matches(self):
+        """Get matches that have real scraped data available."""
+        if not self.db:
+            return []
+        
         try:
-            print(f"🌍 Finding matches from ALL leagues in next {hours_ahead} hours...")
-            
+            with sqlite3.connect(self.db.db_path) as conn:
+                cursor = conn.cursor()
+                
+                # Get active matches with real data from last 24 hours
+                cursor.execute('''
+                    SELECT match_id, home_team, away_team, league, kickoff_time 
+                    FROM real_match_data 
+                    WHERE is_active = 1 
+                    AND datetime(scraped_at) > datetime('now', '-24 hours')
+                    ORDER BY kickoff_time
+                ''')
+                
+                matches = []
+                for row in cursor.fetchall():
+                    match_id, home_team, away_team, league, kickoff_time = row
+                    
+                    matches.append({
+                        'id': match_id,
+                        'home_team': home_team,
+                        'away_team': away_team,
+                        'league': league,
+                        'kickoff_full': kickoff_time,
+                        'data_source': 'REAL_SCRAPED'
+                    })
+                
+                return matches
+                
+        except Exception as e:
+            print(f"❌ Error getting real data matches: {e}")
+            return []
+    
+    def get_simulation_matches(self, hours_ahead=24):
+        """Fallback: Get simulated matches when no real data available."""
+        try:
             from datetime import timezone
             now = datetime.now(timezone.utc)
             today = now.date()
             tomorrow = today + timedelta(days=1)
             
-            # Major football leagues ESPN API endpoints
+            # ⭐ ONLY MAJOR LEAGUES WE AGREED ON (Top 5 + Champions League)
             leagues = {
                 'Premier League': 'eng.1',
                 'La Liga': 'esp.1', 
                 'Serie A': 'ita.1',
                 'Bundesliga': 'ger.1',
                 'Ligue 1': 'fra.1',
-                'Champions League': 'uefa.champions',
-                'Europa League': 'uefa.europa',
-                'MLS': 'usa.1',
-                'Liga MX': 'mex.1',
-                'Brazilian Serie A': 'bra.1',
-                'Argentine Primera': 'arg.1',
-                'Netherlands Eredivisie': 'ned.1',
-                'Portuguese Liga': 'por.1',
-                'Scottish Premiership': 'sco.1',
-                'Belgian Pro League': 'bel.1',
-                'Turkish Super Lig': 'tur.1',
-                'Russian Premier League': 'rus.1',
-                'Copa Libertadores': 'conmebol.libertadores',
-                'Copa del Rey': 'esp.copa_del_rey',
-                'FA Cup': 'eng.fa',
-                'DFB Pokal': 'ger.dfb_pokal',
-                'Coupe de France': 'fra.coupe_de_france',
-                'Coppa Italia': 'ita.coppa_italia',
-                'UEFA Nations League': 'uefa.nations',
-                'World Cup Qualifiers': 'fifa.world_cup_qual',
-                'International Friendlies': 'fifa.friendly'
+                'Champions League': 'uefa.champions'
             }
             
             all_matches = []
@@ -238,27 +277,38 @@ class BettorWebService:
         }
         return priorities.get(league_name, 20)  # Default priority for unlisted leagues
     
+    def _is_analysis_fresh(self, analysis):
+        """Check if cached analysis is fresh (within last 6 hours)."""
+        try:
+            if 'generated_at' in analysis:
+                from datetime import datetime
+                generated_time = datetime.fromisoformat(analysis['generated_at'])
+                age_hours = (datetime.now() - generated_time).total_seconds() / 3600
+                return age_hours < 6  # Consider fresh if less than 6 hours old
+        except:
+            pass
+        return False
+    
     def run_match_analysis(self, home_team, away_team):
-        """Get analysis for selected match (from database or run new analysis)."""
+        """Get analysis for selected match FROM DATABASE (instant response)."""
         try:
             print(f"🔍 Looking for analysis: {home_team} vs {away_team}...")
             
-            # Try to find match ID by teams
-            match_id = self._find_match_id(home_team, away_team)
+            # PRIORITY: Check CSV cache first (INSTANT - no API calls)
+            print(f"⚡ Checking CSV cache for analysis...")
+            existing_analysis = self.csv_manager.get_analysis(home_team, away_team)
             
-            if match_id and self.db:
-                # Check database first
-                print(f"📊 Checking database for existing analysis...")
-                existing_analysis = self.db.get_analysis_by_match(match_id)
-                
-                if existing_analysis:
-                    print(f"✅ Found existing analysis in database")
-                    return existing_analysis
+            if existing_analysis and self.csv_manager.is_analysis_fresh(existing_analysis):
+                print(f"✅ Found fresh analysis in CSV (INSTANT - NO API CALLS)")
+                return existing_analysis
+            elif existing_analysis:
+                print(f"⚠️ Found stale CSV analysis, will generate new one")
             
-            # If not found in database, run new analysis
+            # FALLBACK: Only run new analysis if absolutely needed
             print(f"🚀 Running new analysis for {home_team} vs {away_team}...")
+            print(f"⚠️ This should rarely happen - run daily_data_populator.py")
             
-            # Get live match data
+            # Get live match data (expensive operation)
             live_data = self.scraper.get_live_match_data(home_team, away_team)
             
             # Run comprehensive analysis
@@ -272,13 +322,12 @@ class BettorWebService:
                 'away_mult': 0.95
             }
             
-            signals = analyze_comprehensive_markets(live_data, config)
+            signals = analyze_espn_based_markets(live_data, config)
             
             if not signals:
                 return {"error": "No betting signals generated"}
             
-            # Calculate earnings
-            earnings_analysis = calculate_expected_earnings(signals, config['bankroll'])
+            # No earnings calculation - showing profitable odds thresholds instead
             
             # Format results for web display
             analysis_results = {
@@ -291,40 +340,34 @@ class BettorWebService:
                 },
                 "summary": {
                     "total_opportunities": len(signals),
-                    "total_stake_recommended": earnings_analysis['total_stakes'],
-                    "expected_profit": earnings_analysis['expected_profit'],
-                    "expected_roi_percent": earnings_analysis['expected_roi'],
-                    "bankroll_utilization_percent": earnings_analysis['bankroll_utilization']
+                    "high_confidence_bets": len([s for s in signals if s['confidence'] == 'High']),
+                    "medium_confidence_bets": len([s for s in signals if s['confidence'] == 'Medium']),
+                    "note": "Bet only if your bookmaker offers better odds than the minimum profitable odds shown"
                 },
-                "profit_scenarios": earnings_analysis['scenarios'],
                 "top_bets": [],
                 "all_bets": []
             }
             
-            # Process betting signals
+            # Process betting signals with profitable odds thresholds
             for i, signal in enumerate(signals, 1):
-                decimal_odds = american_to_decimal(signal['odds'])
-                potential_profit = (decimal_odds - 1) * signal['suggested_stake']
-                confidence = "HIGH" if signal['edge'] > 0.2 else "MEDIUM" if signal['edge'] > 0.1 else "LOW"
-                
                 bet_info = {
                     "priority": i,
-                    "player": signal['player'],
+                    "player": signal['player_name'],
+                    "shirt_number": signal['shirt_number'],
                     "team": signal['team'],
+                    "position": signal['position'],
                     "market": signal['market'],
-                    "bet_description": f"{signal['market']} ≥ {signal['threshold']}",
+                    "bet_description": f"{signal['market']} ≥ {signal['threshold']}" if signal['threshold'] > 0 else signal['market'],
                     "threshold": signal['threshold'],
-                    "odds_american": signal['odds'],
-                    "odds_decimal": round(decimal_odds, 2),
                     "model_probability_percent": round(signal['model_prob'] * 100, 1),
-                    "bookmaker_implied_probability_percent": round(signal['implied_prob'] * 100, 1),
-                    "edge_percent": round(signal['edge'] * 100, 1),
-                    "kelly_percent": round(signal['kelly'] * 100, 1),
-                    "recommended_stake_dollars": round(signal['suggested_stake'], 2),
-                    "potential_profit_dollars": round(potential_profit, 2),
-                    "potential_return_dollars": round(signal['suggested_stake'] + potential_profit, 2),
-                    "confidence": confidence,
-                    "expected_minutes": signal['expected_minutes'],
+                    "fair_odds_decimal": signal['fair_odds_decimal'],
+                    "min_profitable_odds_decimal": signal['min_profitable_odds_decimal'],
+                    "min_profitable_odds_american": signal['min_profitable_odds_american'],
+                    "confidence": signal['confidence'],
+                    "apps_this_season": signal['apps'],
+                    "player_average": signal['player_avg'],
+                    "reasoning": signal['reasoning'],
+                    "instruction": f"✅ Bet only if your bookmaker offers odds better than {signal['min_profitable_odds_american']}",
                     "home_away": "HOME" if signal['team'] == home_team else "AWAY"
                 }
                 
@@ -334,13 +377,12 @@ class BettorWebService:
                 if i <= 8:
                     analysis_results["top_bets"].append(bet_info)
             
-            # Store new analysis in database if we have a match_id and database
-            if match_id and self.db:
-                try:
-                    self.db.store_analysis(match_id, analysis_results)
-                    print(f"💾 Stored analysis in database")
-                except Exception as e:
-                    print(f"⚠️ Failed to store analysis: {e}")
+            # Store in CSV for next time (so it's cached)
+            try:
+                self.csv_manager.store_analysis(home_team, away_team, analysis_results)
+                print(f"💾 Analysis cached to CSV for future instant loading")
+            except Exception as e:
+                print(f"⚠️ Failed to cache analysis: {e}")
             
             return analysis_results
             

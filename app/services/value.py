@@ -94,3 +94,18 @@ def suggested_stake(
     stake_fraction = min(kelly_f, max_stake_pct)
     
     return bankroll * stake_fraction
+
+
+def decimal_to_american(decimal_odds: float) -> str:
+    """Convert decimal odds to American odds format."""
+    if decimal_odds <= 1:
+        raise ValueError("Decimal odds must be greater than 1")
+    
+    if decimal_odds >= 2.0:
+        # Positive American odds: 2.50 -> +150
+        american = int((decimal_odds - 1) * 100)
+        return f"+{american}"
+    else:
+        # Negative American odds: 1.83 -> -120
+        american = int(-100 / (decimal_odds - 1))
+        return str(american)

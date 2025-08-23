@@ -82,7 +82,7 @@ def calculate_cards_probability(player_stats: Dict, adjustments: Dict) -> float:
 
 
 def analyze_comprehensive_markets(live_data: Dict, config: Dict) -> List[Dict]:
-    """Analyze all player prop markets comprehensively."""
+    """Analyze all player prop markets and calculate profitable odds thresholds."""
     signals = []
     
     # Create lookups using SHIRT NUMBERS + TEAM as primary key (both teams can have same number)
@@ -100,25 +100,20 @@ def analyze_comprehensive_markets(live_data: Dict, config: Dict) -> List[Dict]:
     for team in live_data['team_stats']:
         team_stats_dict[team['team']] = team
     
-    # Analyze each market using SHIRT NUMBERS + TEAM for matching
-    for odds_entry in live_data['odds']:
-        shirt_number = odds_entry.get('shirt_number')
-        team = odds_entry.get('team')
+    # Generate analysis for each player based on their real ESPN stats
+    for player_key, player_stats in player_stats_dict.items():
+        shirt_number, team = player_key
         
-        # Skip team markets for now
-        if odds_entry['market'] in ['Team Corners', 'Total Corners']:
-            continue
-        
-        # Skip if no shirt number/team or player not found
-        if not shirt_number or not team:
+        if player_key not in lineups_dict:
             continue
             
-        player_key = (shirt_number, team)
-        if player_key not in lineups_dict or player_key not in player_stats_dict:
-            continue
-        
         lineup = lineups_dict[player_key]
-        player_stats = player_stats_dict[player_key]
+        player_name = player_stats['player_name']
+        position = player_stats['position']
+        
+        # Skip players with no appearances (no real data)
+        if player_stats.get('apps', 0) == 0:
+            continue
         
         # Determine opponent team
         opponent_team = lineup['away_team'] if lineup['team'] == lineup['home_team'] else lineup['home_team']
@@ -133,20 +128,31 @@ def analyze_comprehensive_markets(live_data: Dict, config: Dict) -> List[Dict]:
             'is_home': is_home,
         }
         
-        # Calculate model probability based on market type
-        model_prob = 0.0
+        # Generate profitable betting opportunities based on real player stats
+        betting_opportunities = []
         
-        if odds_entry['market'] == 'Player Shots':
-            adjusted_lambda = compound_adjustments(
-                base_lam=player_stats['shots_pg'],
-                expected_minutes=lineup['expected_minutes'],
-                opponent_shots_allowed=adjustments['opponent_shots_allowed'],
-                league_avg_shots_allowed=config['league_avg_shots'],
-                is_home=is_home,
-                home_mult=config['home_mult'],
-                away_mult=config['away_mult']
-            )
-            model_prob = p_geq(odds_entry['threshold'], adjusted_lambda)
+        # 1. Player Shots (if player averages >0.5 shots/game)
+        if player_stats['shots_pg'] > 0.5:
+            shot_thresholds = [1, 2, 3] if player_stats['shots_pg'] > 2.0 else [1, 2]
+            
+            for threshold in shot_thresholds:
+                adjusted_lambda = compound_adjustments(
+                    base_lam=player_stats['shots_pg'],
+                    expected_minutes=lineup['expected_minutes'],
+                    opponent_shots_allowed=adjustments['opponent_shots_allowed'],
+                    league_avg_shots_allowed=config['league_avg_shots'],
+                    is_home=is_home,
+                    home_mult=config['home_mult'],
+                    away_mult=config['away_mult']
+                )
+                model_prob = p_geq(threshold, adjusted_lambda)
+                
+                if model_prob > 0.25:  # Only show if reasonable chance
+                    betting_opportunities.append({
+                        'market': 'Player Shots',
+                        'threshold': threshold,
+                        'probability': model_prob
+                    })
             
         elif odds_entry['market'] == 'Player Shots on Target':
             sot_lambda = calculate_sot_probability(player_stats, adjustments)

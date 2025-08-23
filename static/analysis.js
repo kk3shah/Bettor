@@ -64,50 +64,96 @@ class BettorAnalysis {
     }
 
     displayAnalysis(data) {
-        console.log('📊 Displaying analysis results');
+        console.log('📊 Displaying analysis results', data);
         
-        // Update match header
-        this.updateMatchHeader(data.match_info);
+        // ✅ VALIDATION: Check if we have valid data
+        if (!data || typeof data !== 'object') {
+            console.error('❌ Invalid analysis data:', data);
+            this.showError('Invalid analysis data received');
+            return;
+        }
         
-        // Update summary stats
-        this.updateSummaryStats(data.summary);
+        // Update match header (with fallback data)
+        this.updateMatchHeader(data.match_info || {});
+        
+        // Update summary stats (with fallback data)
+        this.updateSummaryStats(data.summary || {});
         
         // Display top bets
-        this.displayTopBets(data.top_bets);
+        this.displayTopBets(data.top_bets || []);
         
-        // Display all bets
-        this.displayAllBets(data.all_bets);
+        // Display all bets (use top_bets as fallback if all_bets not present)
+        this.displayAllBets(data.all_bets || data.top_bets || []);
         
-        // Display profit scenarios
-        this.displayScenarios(data.profit_scenarios);
+        // No profit scenarios - using profitable odds thresholds instead
         
         // Animate values
         this.animateStats();
     }
 
     updateMatchHeader(matchInfo) {
-        // Update analysis time
-        const analysisTime = new Date(matchInfo.analysis_time);
-        document.getElementById('analysisTime').textContent = analysisTime.toLocaleTimeString();
+        // ✅ NULL CHECK: Handle missing match info
+        if (!matchInfo || typeof matchInfo !== 'object') {
+            console.warn('⚠️ Missing match info, using defaults');
+            matchInfo = {};
+        }
+        
+        // Update analysis time safely
+        try {
+            const analysisTime = new Date(matchInfo.analysis_time || Date.now());
+            const timeElement = document.getElementById('analysisTime');
+            if (timeElement) {
+                timeElement.textContent = analysisTime.toLocaleTimeString();
+            }
+        } catch (error) {
+            console.warn('⚠️ Error updating analysis time:', error);
+        }
         
         // Update lineup source
-        document.getElementById('lineupSource').textContent = matchInfo.lineup_source || 'Squad-based analysis';
+        const lineupSourceElement = document.getElementById('lineupSource');
+        if (lineupSourceElement) {
+            lineupSourceElement.textContent = matchInfo.lineup_source || 'Squad-based analysis';
+        }
         
         // Update match time if available
         if (matchInfo.kickoff_time) {
-            const kickoffTime = new Date(matchInfo.kickoff_time);
-            document.getElementById('matchTime').textContent = kickoffTime.toLocaleTimeString([], {
-                hour: '2-digit', 
-                minute: '2-digit'
-            });
+            try {
+                const kickoffTime = new Date(matchInfo.kickoff_time);
+                const matchTimeElement = document.getElementById('matchTime');
+                if (matchTimeElement) {
+                    matchTimeElement.textContent = kickoffTime.toLocaleTimeString([], {
+                        hour: '2-digit', 
+                        minute: '2-digit'
+                    });
+                }
+            } catch (error) {
+                console.warn('⚠️ Error updating match time:', error);
+            }
         }
     }
 
     updateSummaryStats(summary) {
-        document.getElementById('totalOpportunities').textContent = summary.total_opportunities;
-        document.getElementById('expectedROI').textContent = `${summary.expected_roi_percent}%`;
-        document.getElementById('totalStake').textContent = BettorUtils.formatCurrency(summary.total_stake_recommended);
-        document.getElementById('expectedProfit').textContent = BettorUtils.formatCurrency(summary.expected_profit);
+        // ✅ NULL CHECK: Handle missing summary data
+        if (!summary || typeof summary !== 'object') {
+            console.warn('⚠️ Missing summary data, using defaults');
+            summary = {};
+        }
+        
+        // Update elements safely
+        const totalOppsElement = document.getElementById('totalOpportunities');
+        if (totalOppsElement) {
+            totalOppsElement.textContent = summary.total_opportunities || 0;
+        }
+        
+        const highConfElement = document.getElementById('highConfidenceBets');
+        if (highConfElement) {
+            highConfElement.textContent = summary.high_confidence_bets || 0;
+        }
+        
+        const mediumConfElement = document.getElementById('mediumConfidenceBets');
+        if (mediumConfElement) {
+            mediumConfElement.textContent = summary.medium_confidence_bets || 0;
+        }
     }
 
     displayTopBets(topBets) {
@@ -115,6 +161,12 @@ class BettorAnalysis {
         if (!container) return;
         
         container.innerHTML = '';
+        
+        // ✅ NULL CHECK: Handle undefined or empty topBets
+        if (!topBets || !Array.isArray(topBets) || topBets.length === 0) {
+            container.innerHTML = '<div class="no-bets">No betting opportunities available</div>';
+            return;
+        }
         
         topBets.slice(0, 6).forEach(bet => {
             const betElement = this.createBetCard(bet, false);
@@ -128,6 +180,17 @@ class BettorAnalysis {
         
         container.innerHTML = '';
         
+        // ✅ NULL CHECK: Handle undefined or empty allBets (use top_bets as fallback)
+        if (!allBets || !Array.isArray(allBets) || allBets.length === 0) {
+            // Use top_bets as fallback for all_bets
+            const fallbackBets = this.analysisData?.top_bets || [];
+            if (fallbackBets.length === 0) {
+                container.innerHTML = '<div class="no-bets">No detailed betting analysis available</div>';
+                return;
+            }
+            allBets = fallbackBets;
+        }
+        
         allBets.forEach(bet => {
             const betElement = this.createBetCard(bet, true);
             container.appendChild(betElement);
@@ -135,52 +198,97 @@ class BettorAnalysis {
     }
 
     createBetCard(bet, detailed = false) {
+        // ✅ NULL CHECK: Handle completely undefined bet object
+        if (!bet || typeof bet !== 'object') {
+            console.warn('⚠️ Invalid bet object:', bet);
+            return document.createElement('div'); // Return empty div
+        }
+        
         const card = document.createElement('div');
-        card.className = `bet-card ${bet.confidence.toLowerCase()}-confidence`;
-        card.dataset.confidence = bet.confidence.toLowerCase();
         
-        const edgeColor = bet.edge_percent > 30 ? 'var(--secondary-color)' : 
-                         bet.edge_percent > 15 ? 'var(--warning-color)' : 'var(--text-muted)';
+        // Safe property access with fallbacks
+        const confidence = bet.confidence || 'Medium';
+        const modelProb = bet.model_probability_percent || 50;
         
-        card.innerHTML = `
-            <div class="bet-header">
-                <div class="bet-player">
-                    <div class="player-name">${bet.player}</div>
-                    <div class="bet-market">${bet.bet_description}</div>
+        card.className = `bet-card ${confidence.toLowerCase()}-confidence`;
+        card.dataset.confidence = confidence.toLowerCase();
+        
+        const probColor = modelProb > 40 ? 'var(--success-color)' : 
+                         modelProb > 25 ? 'var(--warning-color)' : 'var(--text-muted)';
+        
+        // Handle both old and new data formats gracefully
+        const playerName = bet.player || bet.player_name || 'Unknown Player';
+        const shirtNumber = bet.shirt_number || bet.jersey_number || '';
+        const position = bet.position || '';
+        const team = bet.team || '';
+        const market = bet.bet_description || bet.market || 'Unknown Market';
+        
+        // New format fields (profitable odds thresholds)
+        if (bet.min_profitable_odds_american && bet.min_profitable_odds_decimal) {
+            card.innerHTML = `
+                <div class="bet-header">
+                    <div class="bet-player">
+                        <div class="player-name">${playerName}${shirtNumber ? ` (#${shirtNumber})` : ''}</div>
+                        <div class="bet-market">${market}</div>
+                        <div class="bet-position">${position}${team ? ` - ${team}` : ''}</div>
+                    </div>
+                    <div class="confidence-badge ${confidence.toLowerCase()}">${confidence}</div>
                 </div>
-                <div class="confidence-badge ${bet.confidence.toLowerCase()}">${bet.confidence}</div>
-            </div>
-            
-            <div class="bet-details">
-                <div class="bet-detail">
-                    <div class="detail-value" style="color: ${edgeColor}">${bet.edge_percent}%</div>
-                    <div class="detail-label">Edge</div>
+                
+                <div class="bet-details">
+                    <div class="bet-detail">
+                        <div class="detail-value" style="color: ${probColor}">${modelProb}%</div>
+                        <div class="detail-label">Model Prob</div>
+                    </div>
+                    <div class="bet-detail">
+                        <div class="detail-value">${bet.fair_odds_decimal || 'N/A'}</div>
+                        <div class="detail-label">Fair Odds</div>
+                    </div>
+                    <div class="bet-detail">
+                        <div class="detail-value">${bet.apps_this_season || 'N/A'}</div>
+                        <div class="detail-label">Apps</div>
+                    </div>
                 </div>
-                <div class="bet-detail">
-                    <div class="detail-value">${bet.odds_american}</div>
-                    <div class="detail-label">Odds</div>
+                
+                <div class="bet-threshold">
+                    <div class="threshold-info">
+                        <div class="threshold-label">💰 Bet if your bookmaker offers:</div>
+                        <div class="threshold-value">${bet.min_profitable_odds_american} or better</div>
+                        <div class="threshold-decimal">(${bet.min_profitable_odds_decimal} decimal)</div>
+                    </div>
                 </div>
-                <div class="bet-detail">
-                    <div class="detail-value">${bet.model_probability_percent}%</div>
-                    <div class="detail-label">Model Prob</div>
+                
+                <div class="bet-reasoning">
+                    <small>${bet.reasoning || 'Based on statistical analysis'}</small>
                 </div>
-                <div class="bet-detail">
-                    <div class="detail-value">${bet.kelly_percent}%</div>
-                    <div class="detail-label">Kelly</div>
+            `;
+        } else {
+            // Fallback for old format data
+            card.innerHTML = `
+                <div class="bet-header">
+                    <div class="bet-player">
+                        <div class="player-name">${playerName}</div>
+                        <div class="bet-market">${bet.bet_description || bet.market}</div>
+                    </div>
+                    <div class="confidence-badge ${confidence.toLowerCase()}">${confidence}</div>
                 </div>
-            </div>
-            
-            <div class="bet-financial">
-                <div class="stake-info">
-                    <div class="stake-value">${BettorUtils.formatCurrency(bet.recommended_stake_dollars)}</div>
-                    <div class="stake-label">Stake</div>
+                
+                <div class="bet-details">
+                    <div class="bet-detail">
+                        <div class="detail-value" style="color: ${probColor}">${modelProb}%</div>
+                        <div class="detail-label">Model Prob</div>
+                    </div>
+                    <div class="bet-detail">
+                        <div class="detail-value">${bet.odds_american || bet.odds || 'N/A'}</div>
+                        <div class="detail-label">Odds</div>
+                    </div>
                 </div>
-                <div class="profit-info">
-                    <div class="profit-value">${BettorUtils.formatCurrency(bet.potential_profit_dollars)}</div>
-                    <div class="profit-label">Profit</div>
+                
+                <div class="bet-note">
+                    <small>⚠️ Old analysis format - refresh page for new profitable odds thresholds</small>
                 </div>
-            </div>
-        `;
+            `;
+        }
         
         return card;
     }

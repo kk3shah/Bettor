@@ -420,17 +420,145 @@ class LiveDataScraper:
             print("ℹ️ Using likely starters from squad")
             analysis_type = "squad"
         
-        # Generate realistic home team lineup for ANY team
-        home_lineup = self._generate_realistic_lineup(home_team, is_home=True)
+        # Try to get REAL player rosters from ESPN API first
+        print(f"🔍 Trying to get real {home_team} players from ESPN...")
+        home_lineup = self._get_real_team_roster(home_team, is_home=True)
+        if not home_lineup:
+            print(f"⚠️ No real {home_team} roster found, using fallback")
+            home_lineup = self._generate_realistic_lineup(home_team, is_home=True)
             
-        # Generate realistic away team lineup for ANY team  
-        away_lineup = self._generate_realistic_lineup(away_team, is_home=False)
+        print(f"🔍 Trying to get real {away_team} players from ESPN...")
+        away_lineup = self._get_real_team_roster(away_team, is_home=False) 
+        if not away_lineup:
+            print(f"⚠️ No real {away_team} roster found, using fallback")
+            away_lineup = self._generate_realistic_lineup(away_team, is_home=False)
         
         return home_lineup, away_lineup
+    
+    def _get_real_team_roster(self, team_name: str, is_home: bool = True) -> List[Dict]:
+        """Get real team roster from ESPN API."""
+        try:
+            import requests
+            
+            # Map team names to ESPN team IDs (Premier League)
+            team_id_map = {
+                'Arsenal': '359',
+                'Chelsea': '363', 
+                'Manchester United': '360',
+                'Manchester City': '382',
+                'Liverpool': '364',
+                'Tottenham': '367',
+                'Newcastle': '361',
+                'Brighton': '331',
+                'Aston Villa': '362',
+                'West Ham': '371',
+                'Leeds United': '357',  # Add Leeds
+                'Crystal Palace': '384',
+                'Nottingham Forest': '393',
+                # La Liga teams
+                'Barcelona': '83',
+                'Real Madrid': '86', 
+                'Atletico Madrid': '1244',
+                'Valencia': '95',
+                'Sevilla': '243',
+                'Villarreal': '94',
+                'Real Betis': '244',
+                'Athletic Bilbao': '262',
+                'Real Sociedad': '92',
+                'Levante': '274'
+            }
+            
+            team_id = team_id_map.get(team_name)
+            if not team_id:
+                print(f"   ❌ No ESPN ID found for {team_name}")
+                return None
+            
+            # Determine league
+            if team_name in ['Arsenal', 'Chelsea', 'Manchester United', 'Manchester City', 'Liverpool', 'Tottenham', 'Newcastle', 'Brighton', 'Aston Villa', 'West Ham', 'Leeds United', 'Crystal Palace', 'Nottingham Forest']:
+                league_id = 'eng.1'
+            else:
+                league_id = 'esp.1'  # Default to La Liga for Spanish teams
+            
+            print(f"   📡 Getting ESPN roster for {team_name} (ID: {team_id})")
+            roster_url = f"https://site.api.espn.com/apis/site/v2/sports/soccer/{league_id}/teams/{team_id}/roster"
+            
+            response = requests.get(roster_url, timeout=10)
+            if response.status_code != 200:
+                print(f"   ❌ ESPN API failed: {response.status_code}")
+                return None
+            
+            data = response.json()
+            athletes = data.get('athletes', [])
+            
+            if not athletes:
+                print(f"   ❌ No athletes found for {team_name}")
+                return None
+            
+            print(f"   ✅ Found {len(athletes)} real {team_name} players")
+            
+            # Convert to our lineup format - pick realistic starting XI
+            lineup = []
+            positions_needed = ['GK', 'RB', 'CB', 'CB', 'LB', 'CDM', 'CM', 'CAM', 'RW', 'ST', 'LW']
+            used_players = set()
+            
+            for pos in positions_needed:
+                # Find a player for this position
+                suitable_player = None
+                
+                for athlete in athletes:
+                    if athlete.get('id') in used_players:
+                        continue
+                        
+                    player_pos = athlete.get('position', {})
+                    if isinstance(player_pos, dict):
+                        player_pos_abbr = player_pos.get('abbreviation', 'M')
+                    else:
+                        player_pos_abbr = 'M'
+                    
+                    # Match positions
+                    if ((pos == 'GK' and player_pos_abbr == 'G') or
+                        (pos in ['RB', 'LB', 'CB'] and player_pos_abbr == 'D') or
+                        (pos in ['CDM', 'CM', 'CAM'] and player_pos_abbr == 'M') or
+                        (pos in ['RW', 'LW', 'ST'] and player_pos_abbr == 'F')):
+                        suitable_player = athlete
+                        break
+                
+                # If no specific position match, take any unused player
+                if not suitable_player:
+                    for athlete in athletes:
+                        if athlete.get('id') not in used_players:
+                            suitable_player = athlete
+                            break
+                
+                if suitable_player:
+                    used_players.add(suitable_player.get('id'))
+                    lineup.append({
+                        'shirt_number': suitable_player.get('jersey', 1),
+                        'player_name': suitable_player.get('displayName', 'Unknown'),
+                        'position': pos,
+                        'team': team_name,
+                        'expected_minutes': 85,
+                        'home_team': team_name if is_home else None,
+                        'away_team': team_name if not is_home else None
+                    })
+                
+                if len(lineup) >= 11:  # Starting XI
+                    break
+            
+            print(f"   ✅ Created lineup with {len(lineup)} real {team_name} players")
+            return lineup if lineup else None
+            
+        except Exception as e:
+            print(f"   ❌ Error getting real roster for {team_name}: {e}")
+            return None
     
     def _generate_realistic_lineup(self, team_name: str, is_home: bool = True) -> List[Dict]:
         """Generate realistic player names and lineup for any team."""
         import random
+        import time
+        
+        # Ensure truly random generation by seeding with time + team name
+        random.seed(int(time.time() * 1000) + hash(team_name) % 10000)
         
         # Common first names by region/style
         first_names = [
@@ -456,8 +584,16 @@ class LiveDataScraper:
             'Mueller', 'Schmidt', 'Schneider', 'Fischer', 'Weber', 'Meyer', 'Wagner', 'Becker', 'Schulz', 'Hoffmann'
         ]
         
-        def generate_player_name():
-            return f"{random.choice(first_names)} {random.choice(surnames)}"
+        def generate_player_name(position):
+            # Make names more unique by combining team + position + random
+            first = random.choice(first_names)
+            last = random.choice(surnames)
+            
+            # Ensure no exact duplicates by adding variety
+            if random.random() < 0.3:  # 30% chance of double-barrel surnames
+                last = f"{last}-{random.choice(['Smith', 'Jones', 'Wilson', 'Brown', 'Davis'])}"
+                
+            return f"{first} {last}"
         
         # Generate realistic lineup with REALISTIC SHIRT NUMBERS (like real football)
         # Common shirt numbers by position in football
@@ -489,17 +625,17 @@ class LiveDataScraper:
             return random.randint(1, 99)
         
         lineup = [
-            {'shirt_number': get_realistic_number('ST'), 'player_name': generate_player_name(), 'position': 'ST', 'expected_minutes': random.randint(80, 90)},
-            {'shirt_number': get_realistic_number('RW'), 'player_name': generate_player_name(), 'position': 'RW', 'expected_minutes': random.randint(75, 90)},
-            {'shirt_number': get_realistic_number('LW'), 'player_name': generate_player_name(), 'position': 'LW', 'expected_minutes': random.randint(75, 90)},
-            {'shirt_number': get_realistic_number('CAM'), 'player_name': generate_player_name(), 'position': 'CAM', 'expected_minutes': random.randint(80, 90)},
-            {'shirt_number': get_realistic_number('CM'), 'player_name': generate_player_name(), 'position': 'CM', 'expected_minutes': random.randint(80, 90)},
-            {'shirt_number': get_realistic_number('CDM'), 'player_name': generate_player_name(), 'position': 'CDM', 'expected_minutes': random.randint(85, 90)},
-            {'shirt_number': get_realistic_number('LB'), 'player_name': generate_player_name(), 'position': 'LB', 'expected_minutes': random.randint(80, 90)},
-            {'shirt_number': get_realistic_number('CB'), 'player_name': generate_player_name(), 'position': 'CB', 'expected_minutes': random.randint(85, 90)},
-            {'shirt_number': get_realistic_number('CB'), 'player_name': generate_player_name(), 'position': 'CB', 'expected_minutes': random.randint(85, 90)},
-            {'shirt_number': get_realistic_number('RB'), 'player_name': generate_player_name(), 'position': 'RB', 'expected_minutes': random.randint(80, 90)},
-            {'shirt_number': get_realistic_number('GK'), 'player_name': generate_player_name(), 'position': 'GK', 'expected_minutes': 90},
+            {'shirt_number': get_realistic_number('ST'), 'player_name': generate_player_name('ST'), 'position': 'ST', 'expected_minutes': random.randint(80, 90)},
+            {'shirt_number': get_realistic_number('RW'), 'player_name': generate_player_name('RW'), 'position': 'RW', 'expected_minutes': random.randint(75, 90)},
+            {'shirt_number': get_realistic_number('LW'), 'player_name': generate_player_name('LW'), 'position': 'LW', 'expected_minutes': random.randint(75, 90)},
+            {'shirt_number': get_realistic_number('CAM'), 'player_name': generate_player_name('CAM'), 'position': 'CAM', 'expected_minutes': random.randint(80, 90)},
+            {'shirt_number': get_realistic_number('CM'), 'player_name': generate_player_name('CM'), 'position': 'CM', 'expected_minutes': random.randint(80, 90)},
+            {'shirt_number': get_realistic_number('CDM'), 'player_name': generate_player_name('CDM'), 'position': 'CDM', 'expected_minutes': random.randint(85, 90)},
+            {'shirt_number': get_realistic_number('LB'), 'player_name': generate_player_name('LB'), 'position': 'LB', 'expected_minutes': random.randint(80, 90)},
+            {'shirt_number': get_realistic_number('CB'), 'player_name': generate_player_name('CB'), 'position': 'CB', 'expected_minutes': random.randint(85, 90)},
+            {'shirt_number': get_realistic_number('CB'), 'player_name': generate_player_name('CB'), 'position': 'CB', 'expected_minutes': random.randint(85, 90)},
+            {'shirt_number': get_realistic_number('RB'), 'player_name': generate_player_name('RB'), 'position': 'RB', 'expected_minutes': random.randint(80, 90)},
+            {'shirt_number': get_realistic_number('GK'), 'player_name': generate_player_name('GK'), 'position': 'GK', 'expected_minutes': 90},
         ]
         
         return lineup
