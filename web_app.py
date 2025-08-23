@@ -508,15 +508,28 @@ def get_recent_analyses():
     except Exception as e:
         return jsonify({"error": str(e)}), 500
 
-@app.route('/health')
-@app.route('/api/health')
+@app.route('/health', methods=['GET', 'HEAD'])
+@app.route('/api/health', methods=['GET', 'HEAD'])
 def health_check():
-    """Simple health check endpoint for Railway."""
-    return jsonify({
-        "status": "healthy",
+    """Railway-optimized health check endpoint."""
+    # Handle HEAD requests (Railway sometimes uses these)
+    if request.method == 'HEAD':
+        return '', 200
+    
+    # Simple JSON response for GET requests
+    response = {
+        "status": "ok",
         "timestamp": datetime.now().isoformat(),
-        "service": "bettor-api"
-    }), 200
+        "service": "bettor"
+    }
+    
+    # Add CORS headers for Railway
+    resp = jsonify(response)
+    resp.headers['Access-Control-Allow-Origin'] = '*'
+    resp.headers['Access-Control-Allow-Methods'] = 'GET, HEAD'
+    resp.headers['Cache-Control'] = 'no-cache'
+    
+    return resp, 200
 
 if __name__ == '__main__':
     port = int(os.environ.get('PORT', 5000))
