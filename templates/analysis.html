@@ -1,0 +1,195 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>📊 Match Analysis - Bettor</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    
+    <!-- Mobile optimizations -->
+    <meta name="theme-color" content="#0066ff">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="default">
+    
+    <!-- Favicon -->
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2280%22>🎯</text></svg>">
+</head>
+<body>
+    <div class="app-container">
+        <!-- Header -->
+        <header class="header analysis-header">
+            <div class="header-content">
+                <a href="/" class="back-btn">
+                    <span class="back-icon">←</span>
+                    <span>Back</span>
+                </a>
+                <div class="logo">
+                    <span class="logo-icon">📊</span>
+                    <span class="logo-text">Analysis</span>
+                </div>
+            </div>
+        </header>
+
+        <!-- Main Content -->
+        <main class="main-content analysis-main">
+            <!-- Loading State -->
+            <div id="analysisLoading" class="loading-container">
+                <div class="loading-content">
+                    <div class="loading-spinner"></div>
+                    <h3>Analyzing Match</h3>
+                    <div class="loading-steps">
+                        <div class="loading-step active">📡 Fetching lineups...</div>
+                        <div class="loading-step">📊 Calculating probabilities...</div>
+                        <div class="loading-step">💰 Finding value bets...</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Analysis Results -->
+            <div id="analysisResults" style="display: none;">
+                <!-- Match Header -->
+                <section class="match-header-section">
+                    <div class="match-header card">
+                        <div class="match-teams">
+                            <div class="team home-team">
+                                <span class="team-name" id="homeTeamName">{{ home_team }}</span>
+                                <span class="team-badge">🏠</span>
+                            </div>
+                            <div class="vs-divider">
+                                <span class="vs-text">VS</span>
+                                <div class="match-time" id="matchTime">16:30</div>
+                            </div>
+                            <div class="team away-team">
+                                <span class="team-badge">✈️</span>
+                                <span class="team-name" id="awayTeamName">{{ away_team }}</span>
+                            </div>
+                        </div>
+                        
+                        <div class="analysis-meta">
+                            <div class="meta-item">
+                                <span class="meta-label">Analysis Time:</span>
+                                <span class="meta-value" id="analysisTime">-</span>
+                            </div>
+                            <div class="meta-item">
+                                <span class="meta-label">Lineup Source:</span>
+                                <span class="meta-value" id="lineupSource">-</span>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- Summary Stats -->
+                <section class="summary-section">
+                    <div class="summary-grid">
+                        <div class="summary-card highlight">
+                            <div class="summary-icon">🎯</div>
+                            <div class="summary-content">
+                                <div class="summary-value" id="totalOpportunities">-</div>
+                                <div class="summary-label">Opportunities Found</div>
+                            </div>
+                        </div>
+                        
+                        <div class="summary-card">
+                            <div class="summary-icon">📈</div>
+                            <div class="summary-content">
+                                <div class="summary-value" id="expectedROI">-</div>
+                                <div class="summary-label">Expected ROI</div>
+                            </div>
+                        </div>
+                        
+                        <div class="summary-card">
+                            <div class="summary-icon">💰</div>
+                            <div class="summary-content">
+                                <div class="summary-value" id="totalStake">-</div>
+                                <div class="summary-label">Total Stake</div>
+                            </div>
+                        </div>
+                        
+                        <div class="summary-card">
+                            <div class="summary-icon">🚀</div>
+                            <div class="summary-content">
+                                <div class="summary-value" id="expectedProfit">-</div>
+                                <div class="summary-label">Expected Profit</div>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- Top Bets -->
+                <section class="top-bets-section">
+                    <div class="section-header">
+                        <h2>🔥 Top Value Bets</h2>
+                        <p>Highest expected value opportunities</p>
+                    </div>
+                    
+                    <div id="topBetsList" class="bets-list">
+                        <!-- Top bets will be populated by JavaScript -->
+                    </div>
+                </section>
+
+                <!-- All Bets -->
+                <section class="all-bets-section">
+                    <div class="section-header">
+                        <h2>📋 All Opportunities</h2>
+                        <div class="filter-tabs">
+                            <button class="filter-tab active" data-filter="all">All</button>
+                            <button class="filter-tab" data-filter="high">High Confidence</button>
+                            <button class="filter-tab" data-filter="medium">Medium</button>
+                            <button class="filter-tab" data-filter="low">Low</button>
+                        </div>
+                    </div>
+                    
+                    <div id="allBetsList" class="bets-list detailed">
+                        <!-- All bets will be populated by JavaScript -->
+                    </div>
+                </section>
+
+                <!-- Profit Scenarios -->
+                <section class="scenarios-section">
+                    <div class="section-header">
+                        <h2>💡 Profit Scenarios</h2>
+                        <p>Potential outcomes based on different win rates</p>
+                    </div>
+                    
+                    <div id="scenariosList" class="scenarios-grid">
+                        <!-- Scenarios will be populated by JavaScript -->
+                    </div>
+                </section>
+            </div>
+
+            <!-- Error State -->
+            <div id="analysisError" class="error-container" style="display: none;">
+                <div class="error-content">
+                    <div class="error-icon">⚠️</div>
+                    <h3>Analysis Failed</h3>
+                    <p id="errorMessage">Unable to analyze this match. Please try again.</p>
+                    <button onclick="window.location.href='/'" class="retry-btn">
+                        ← Back to Matches
+                    </button>
+                </div>
+            </div>
+        </main>
+
+        <!-- Footer -->
+        <footer class="footer">
+            <p>🎯 <strong>Bettor</strong> - AI-Powered Football Betting Analysis</p>
+            <p>Always gamble responsibly. This is for educational purposes only.</p>
+        </footer>
+    </div>
+
+    <script src="{{ url_for('static', filename='analysis.js') }}"></script>
+    <script>
+        // Initialize with match data
+        const homeTeam = "{{ home_team }}";
+        const awayTeam = "{{ away_team }}";
+        
+        // Start analysis when page loads
+        document.addEventListener('DOMContentLoaded', function() {
+            loadAnalysis(homeTeam, awayTeam);
+        });
+    </script>
+</body>
+</html>

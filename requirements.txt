@@ -11,3 +11,6 @@ requests
 beautifulsoup4
 lxml
 selenium
+flask
+schedule
+gunicorn
