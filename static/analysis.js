@@ -65,6 +65,9 @@ class BettorAnalysis {
 
     displayAnalysis(data) {
         console.log('📊 Displaying analysis results', data);
+        console.log('📊 Data keys:', Object.keys(data));
+        console.log('📊 All bets count:', data.all_bets ? data.all_bets.length : 'NO ALL_BETS');
+        console.log('📊 Top bets count:', data.top_bets ? data.top_bets.length : 'NO TOP_BETS');
         
         // ✅ VALIDATION: Check if we have valid data
         if (!data || typeof data !== 'object') {
@@ -243,6 +246,10 @@ class BettorAnalysis {
                     <div class="bet-detail">
                         <div class="detail-value">${bet.fair_odds_decimal || 'N/A'}</div>
                         <div class="detail-label">Fair Odds</div>
+                    </div>
+                    <div class="bet-detail">
+                        <div class="detail-value" style="color: ${bet.edge >= 0 ? 'var(--success-color)' : 'var(--error-color)'}">${bet.edge ? (bet.edge * 100).toFixed(1) + '%' : 'N/A'}</div>
+                        <div class="detail-label">Edge</div>
                     </div>
                     <div class="bet-detail">
                         <div class="detail-value">${bet.apps_this_season || 'N/A'}</div>

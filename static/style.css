@@ -536,6 +536,39 @@ body {
   border: none;
 }
 
+.summary-card.clickable-tile {
+  cursor: pointer;
+  transition: all 0.3s ease;
+  position: relative;
+  overflow: hidden;
+}
+
+.summary-card.clickable-tile:hover {
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-luxury);
+  border-color: var(--primary-color);
+  background: linear-gradient(135deg, var(--card-bg) 0%, rgba(0, 212, 170, 0.05) 100%);
+}
+
+.summary-card.clickable-tile:active {
+  transform: translateY(0);
+}
+
+.summary-card.clickable-tile::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: -100%;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(90deg, transparent, rgba(0, 212, 170, 0.1), transparent);
+  transition: left 0.5s;
+}
+
+.summary-card.clickable-tile:hover::before {
+  left: 100%;
+}
+
 .summary-icon {
   font-size: var(--font-size-xl);
 }

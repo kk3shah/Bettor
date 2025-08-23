@@ -92,7 +92,7 @@
                             </div>
                         </div>
                         
-                        <div class="summary-card">
+                        <div class="summary-card clickable-tile" data-filter="high" onclick="filterByConfidence('high')">
                             <div class="summary-icon">⭐</div>
                             <div class="summary-content">
                                 <div class="summary-value" id="highConfidenceBets">-</div>
@@ -100,7 +100,7 @@
                             </div>
                         </div>
                         
-                        <div class="summary-card">
+                        <div class="summary-card clickable-tile" data-filter="medium" onclick="filterByConfidence('medium')">
                             <div class="summary-icon">📊</div>
                             <div class="summary-content">
                                 <div class="summary-value" id="mediumConfidenceBets">-</div>
@@ -147,17 +147,7 @@
                     </div>
                 </section>
 
-                <!-- Profit Scenarios -->
-                <section class="scenarios-section">
-                    <div class="section-header">
-                        <h2>💡 Profit Scenarios</h2>
-                        <p>Potential outcomes based on different win rates</p>
-                    </div>
-                    
-                    <div id="scenariosList" class="scenarios-grid">
-                        <!-- Scenarios will be populated by JavaScript -->
-                    </div>
-                </section>
+                <!-- Profit Scenarios section removed per user request -->
             </div>
 
             <!-- Error State -->
@@ -180,11 +170,23 @@
         </footer>
     </div>
 
-    <script src="{{ url_for('static', filename='analysis.js') }}"></script>
+    <script src="{{ url_for('static', filename='analysis.js') }}?v={{ range(1000, 9999) | random }}"></script>
     <script>
         // Initialize with match data
         const homeTeam = "{{ home_team }}";
         const awayTeam = "{{ away_team }}";
+        
+        // Function to filter by confidence when tiles are clicked
+        function filterByConfidence(confidence) {
+            if (window.bettorAnalysis) {
+                window.bettorAnalysis.setFilter(confidence);
+                
+                // Scroll to all bets section
+                document.querySelector('.all-bets-section').scrollIntoView({ 
+                    behavior: 'smooth' 
+                });
+            }
+        }
         
         // Start analysis when page loads
         document.addEventListener('DOMContentLoaded', function() {
