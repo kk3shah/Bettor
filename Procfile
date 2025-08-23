@@ -1,1 +1,1 @@
-web: gunicorn -c gunicorn.conf.py web_app:app
+web: gunicorn --bind 0.0.0.0:$PORT web_app:app

@@ -508,55 +508,10 @@ def get_recent_analyses():
     except Exception as e:
         return jsonify({"error": str(e)}), 500
 
-@app.route('/health', methods=['GET', 'HEAD', 'OPTIONS'])
-@app.route('/api/health', methods=['GET', 'HEAD', 'OPTIONS'])
-@app.route('/healthz', methods=['GET', 'HEAD', 'OPTIONS'])  # Alternative health check path
+@app.route('/health')
 def health_check():
-    """Railway-optimized health check endpoint."""
-    try:
-        # Handle preflight OPTIONS requests
-        if request.method == 'OPTIONS':
-            resp = app.make_default_options_response()
-            resp.headers['Access-Control-Allow-Origin'] = '*'
-            resp.headers['Access-Control-Allow-Methods'] = 'GET, HEAD, OPTIONS'
-            resp.headers['Access-Control-Allow-Headers'] = 'Content-Type'
-            return resp
-        
-        # Handle HEAD requests (Railway sometimes uses these)
-        if request.method == 'HEAD':
-            resp = app.response_class()
-            resp.headers['Access-Control-Allow-Origin'] = '*'
-            resp.status_code = 200
-            return resp
-        
-        # Simple JSON response for GET requests
-        response = {
-            "status": "ok",
-            "timestamp": datetime.now().isoformat(),
-            "service": "bettor",
-            "port": os.environ.get('PORT', '5000'),
-            "host": request.host
-        }
-        
-        # Add CORS headers for Railway
-        resp = jsonify(response)
-        resp.headers['Access-Control-Allow-Origin'] = '*'
-        resp.headers['Access-Control-Allow-Methods'] = 'GET, HEAD, OPTIONS'
-        resp.headers['Cache-Control'] = 'no-cache, no-store, must-revalidate'
-        resp.headers['Pragma'] = 'no-cache'
-        resp.headers['Expires'] = '0'
-        
-        return resp, 200
-        
-    except Exception as e:
-        # Fallback response if anything fails
-        resp = app.response_class(
-            response='OK',
-            status=200,
-            mimetype='text/plain'
-        )
-        resp.headers['Access-Control-Allow-Origin'] = '*'
-        return resp
+    """Ultra-simple health check for Railway."""
+    return 'OK', 200
 
 if __name__ == '__main__':
     port = int(os.environ.get('PORT', 5000))
