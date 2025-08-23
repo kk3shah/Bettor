@@ -10,9 +10,9 @@ This MVP combines confirmed lineups, player statistics, and betting odds to:
 - **Identify value bets** by comparing model probabilities with bookmaker odds
 - **Provide Kelly criterion** suggestions for optimal bet sizing
 
-## 🔥 LIVE BETTING - Man City vs Tottenham
+## 🔥 LIVE BETTING ANALYSIS
 
-**Ready for immediate betting analysis with corrected 2024-25 lineups!**
+**Real-time betting analysis with live lineups from ESPN API!**
 
 ### ⚡ Instant Live Analysis
 ```bash
@@ -22,21 +22,22 @@ scripts\start_live_betting.bat      # Windows
 
 # Or run individual components:
 python scripts/run_live_analysis.py  # Core analysis
-python scripts/final_summary.py      # Results summary
+python scripts/run_betting_json.py   # JSON output
 ```
 
-### 🎯 Current Value Opportunities Found
-- **Erling Haaland 4+ Shots**: 49.5% edge (+165 odds)
-- **Haaland 3+ Shots**: 42.6% edge (-110 odds)  
-- **Phil Foden 2+ Shots**: 35.8% edge (+105 odds)
-- **11 total opportunities** with 24.0% average edge
-- **Expected ROI: 55.8%** on $550 total stakes
+### 🎯 What You Get
+- **Comprehensive market coverage**: Shots, Goals, Cards, Fouls, Passes, Corners
+- **Real ESPN lineup data**: No hardcoded or sample data
+- **Edge detection**: Find profitable betting opportunities
+- **Kelly criterion sizing**: Optimal stake recommendations
+- **JSON output format**: Structured betting recommendations
 
-### ✅ Data Corrections Applied
-- ❌ Removed Harry Kane (moved to Bayern Munich 2023)
-- ✅ Added current Spurs squad: Dominic Solanke, Brennan Johnson, Timo Werner
-- ✅ Updated 2024-25 season player statistics  
-- ✅ Accurate home/away advantage modeling
+### ✅ Key Features
+- 🔄 **Live ESPN API integration** for confirmed lineups
+- 📊 **Multi-market analysis** across all major prop types
+- 🎯 **Value bet identification** with edge calculations
+- 💰 **Expected earnings analysis** with profit scenarios
+- 📱 **JSON output** ready for integration
 
 ---
 
@@ -50,8 +51,8 @@ python scripts/final_summary.py      # Results summary
 
 1. **Clone and setup**:
 ```bash
-git clone <repository-url>
-cd bet-insights-mvp
+git clone https://github.com/kk3shah/Bettor.git
+cd Bettor
 python -m venv .venv
 ```
 
@@ -115,28 +116,28 @@ The system expects 4 CSV files:
 Confirmed starting lineups with expected playing time:
 ```csv
 match_id,kickoff_utc,home_team,away_team,player_name,team,is_starter,expected_minutes
-MCI-TOT-2025-08-23,2025-08-23T19:00:00Z,Man City,Tottenham,Erling Haaland,Man City,1,90
+TEAM1-TEAM2-2025-01-15,2025-01-15T19:00:00Z,Home Team,Away Team,Player Name,Home Team,1,90
 ```
 
 #### Player Stats CSV  
 Season averages for players:
 ```csv
 player_name,team,minutes_per_app,shots_pg,sot_pg,fouls_pg,passes_pg,yc_pg,apps
-Erling Haaland,Man City,83,4.6,2.1,0.8,17,0.03,30
+Player Name,Team Name,85,3.2,1.5,1.1,45,0.05,28
 ```
 
 #### Team Stats CSV
 Defensive and offensive team statistics:
 ```csv
 team,goals_for_pg,goals_against_pg,shots_allowed_pg,cards_pg
-Man City,2.4,0.8,8.5,1.4
+Team Name,2.1,1.2,9.8,1.7
 ```
 
 #### Odds CSV
 Current betting markets from sportsbooks:
 ```csv
 match_id,market,player_name,team,threshold,odds_american,book
-MCI-TOT-2025-08-23,Player Shots,Erling Haaland,Man City,4,+180,FanDuel
+TEAM1-TEAM2-2025-01-15,Player Shots,Player Name,Team Name,3,+140,Sportsbook
 ```
 
 ### 2. Using the UI
@@ -227,7 +228,7 @@ Tests cover:
 ## 📁 Project Structure
 
 ```
-bet-insights-mvp/
+Bettor/
 ├── README.md                 # This file
 ├── requirements.txt          # Python dependencies
 ├── app/                      # Core application
@@ -251,10 +252,12 @@ bet-insights-mvp/
 ## 🔮 Future Extensions
 
 ### Data Sources
-The system uses a clean adapter pattern for easy extension:
-- **WhoScored Integration**: Implement `whoscored_stub.py` for live data
-- **API Feeds**: Add adapters for licensed data providers
-- **Other Sports**: Extend Poisson modeling to other props
+The system uses a clean adapter pattern with multiple live sources:
+- **ESPN API Integration**: Live lineup data from ESPN's public API (implemented)
+- **Additional APIs**: Football-Data.org, API-Football support (with API keys)
+- **Web Scraping**: BBC Sport, Sky Sports fallback scrapers
+- **Manual Override**: CSV upload for custom data
+- **Other Sports**: Extend Poisson modeling to other sports
 
 ### Additional Props
 Easy to add using the same framework:
@@ -296,7 +299,7 @@ streamlit --version
 **Import errors**:
 ```bash
 # Ensure you're in project root and venv is activated
-pwd  # should end in bet-insights-mvp
+pwd  # should end in Bettor
 pip list | grep fastapi
 ```
 

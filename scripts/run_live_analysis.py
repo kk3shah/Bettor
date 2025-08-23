@@ -15,6 +15,7 @@ from app.services.poisson import p_geq
 from app.services.value import american_to_decimal, american_to_implied_prob, edge, suggested_stake
 from app.services.adjust import compound_adjustments
 from app.services.earnings import calculate_expected_earnings, format_earnings_report
+from app.services.multi_market import analyze_comprehensive_markets
 
 
 def main():
@@ -35,9 +36,9 @@ def main():
         print(f"📊 Markets: {len(live_data['odds'])}")
         print()
         
-        # Calculate betting signals
-        print("🧮 Calculating value betting signals...")
-        signals = calculate_signals(live_data)
+        # Calculate comprehensive betting signals across all markets
+        print("🧮 Calculating comprehensive betting signals across ALL markets...")
+        signals = calculate_comprehensive_signals(live_data)
         
         if signals:
             print(f"✅ Found {len(signals)} value betting opportunities!")
@@ -60,6 +61,20 @@ def main():
         return 1
     
     return 0
+
+
+def calculate_comprehensive_signals(live_data):
+    """Calculate comprehensive betting signals across all markets."""
+    config = {
+        'home_mult': 1.05,
+        'away_mult': 0.95,
+        'league_avg_shots': 10.5,
+        'bankroll': 1000.0,
+        'kelly_fraction': 1.0,
+        'max_stake_pct': 0.05
+    }
+    
+    return analyze_comprehensive_markets(live_data, config)
 
 
 def calculate_signals(live_data):
