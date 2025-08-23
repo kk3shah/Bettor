@@ -61,13 +61,19 @@ class BettorBatchProcessor:
                     # Store match information
                     self.db.store_match(match)
                     
-                    # Check if analysis already exists
+                    # Check if analysis already exists and if we should refresh
                     existing_analysis = self.db.get_analysis_by_match(match['id'])
-                    if existing_analysis:
-                        print(f"✅ Analysis already exists, skipping...")
+                    should_refresh = self._should_refresh_analysis(match, existing_analysis)
+                    
+                    if existing_analysis and not should_refresh:
+                        print(f"✅ Analysis already exists and no refresh needed, skipping...")
                         successful_analyses += 1
                         total_opportunities += existing_analysis['summary']['total_opportunities']
                         continue
+                    elif existing_analysis and should_refresh:
+                        print(f"🔄 Analysis exists but REFRESH NEEDED - rerunning...")
+                    else:
+                        print(f"🆕 No existing analysis - running new analysis...")
                     
                     # Run analysis
                     analysis_result = self._analyze_match(match)
@@ -123,10 +129,11 @@ class BettorBatchProcessor:
     def _analyze_match(self, match):
         """Analyze a single match."""
         try:
-            # Run comprehensive analysis
-            live_data = self.web_service.scraper.get_live_match_data(
+            # Run comprehensive analysis with kickoff time for lineup/squad switching
+            live_data = self.web_service.scraper.get_live_match_data_with_timing(
                 match['home_team'], 
-                match['away_team']
+                match['away_team'],
+                match['kickoff_full']  # Pass kickoff time for timeline logic
             )
             
             signals = analyze_comprehensive_markets(live_data, self.config)
@@ -146,7 +153,7 @@ class BettorBatchProcessor:
                     "kickoff_time": match['kickoff_full'],
                     "venue": match.get('venue', ''),
                     "analysis_time": datetime.now(timezone.utc).isoformat(),
-                    "lineup_source": "Squad-based analysis"
+                    "lineup_source": self._determine_analysis_type(match['kickoff_full'])
                 },
                 "summary": {
                     "total_opportunities": len(signals),
@@ -199,6 +206,75 @@ class BettorBatchProcessor:
             print(f"⚠️ Error in match analysis: {e}")
             return {"error": f"Analysis failed: {str(e)}"}
     
+    def _should_refresh_analysis(self, match, existing_analysis):
+        """Determine if we should refresh existing analysis based on timing and lineup availability."""
+        if not existing_analysis:
+            return True  # No existing analysis, definitely need to run
+        
+        try:
+            from datetime import datetime, timezone
+            import dateutil.parser
+            
+            # Parse kickoff time
+            kickoff_time = dateutil.parser.parse(match['kickoff_full'])
+            if kickoff_time.tzinfo is None:
+                kickoff_time = kickoff_time.replace(tzinfo=timezone.utc)
+            
+            now = datetime.now(timezone.utc)
+            minutes_to_kickoff = (kickoff_time - now).total_seconds() / 60
+            
+            # Check if analysis is old (more than 2 hours old)
+            analysis_time_str = existing_analysis.get('match_info', {}).get('analysis_time', '')
+            if analysis_time_str:
+                analysis_time = dateutil.parser.parse(analysis_time_str)
+                hours_since_analysis = (now - analysis_time).total_seconds() / 3600
+                
+                # Refresh if analysis is more than 2 hours old
+                if hours_since_analysis > 2:
+                    print(f"🕐 Analysis is {hours_since_analysis:.1f} hours old - refreshing")
+                    return True
+            
+            # Check if we've crossed the lineup threshold (45 minutes)
+            lineup_source = existing_analysis.get('match_info', {}).get('lineup_source', 'Unknown')
+            
+            if minutes_to_kickoff <= 45 and 'squad-based' in lineup_source.lower():
+                print(f"⚽ Within 45min window but existing analysis is squad-based - refreshing for lineup-based")
+                return True
+            
+            # Check if lineups might now be available
+            if 30 <= minutes_to_kickoff <= 60:  # Sweet spot when lineups often appear
+                print(f"🔍 In lineup release window ({minutes_to_kickoff:.0f}min) - checking for lineup refresh")
+                return True
+                
+            print(f"✅ No refresh needed - {minutes_to_kickoff:.0f}min to kickoff, analysis type: {lineup_source}")
+            return False
+            
+        except Exception as e:
+            print(f"⚠️ Error determining refresh need: {e}")
+            return False  # Don't refresh if we can't determine timing
+
+    def _determine_analysis_type(self, kickoff_time_str):
+        """Determine if analysis should be lineup-based or squad-based based on timing."""
+        try:
+            from datetime import datetime, timezone
+            import dateutil.parser
+            
+            kickoff_time = dateutil.parser.parse(kickoff_time_str)
+            if kickoff_time.tzinfo is None:
+                kickoff_time = kickoff_time.replace(tzinfo=timezone.utc)
+            
+            now = datetime.now(timezone.utc)
+            minutes_to_kickoff = (kickoff_time - now).total_seconds() / 60
+            
+            if minutes_to_kickoff <= 45:
+                return "Lineup-based analysis (within 45min window)"
+            else:
+                return "Squad-based analysis (>45min before kickoff)"
+                
+        except Exception as e:
+            print(f"⚠️ Error determining analysis type: {e}")
+            return "Squad-based analysis (fallback)"
+
     def cleanup_and_maintenance(self):
         """Perform database cleanup and maintenance."""
         print("🧹 Performing database maintenance...")

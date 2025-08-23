@@ -85,34 +85,39 @@ def analyze_comprehensive_markets(live_data: Dict, config: Dict) -> List[Dict]:
     """Analyze all player prop markets comprehensively."""
     signals = []
     
-    # Create lookups
+    # Create lookups using SHIRT NUMBERS + TEAM as primary key (both teams can have same number)
     lineups_dict = {}
     for lineup in live_data['lineups']:
-        key = (lineup['match_id'], lineup['player_name'], lineup['team'])
+        key = (lineup['shirt_number'], lineup['team'])  # Shirt number + team
         lineups_dict[key] = lineup
     
     player_stats_dict = {}
     for player in live_data['player_stats']:
-        key = (player['player_name'], player['team'])
+        key = (player['shirt_number'], player['team'])  # Shirt number + team
         player_stats_dict[key] = player
     
     team_stats_dict = {}
     for team in live_data['team_stats']:
         team_stats_dict[team['team']] = team
     
-    # Analyze each market
+    # Analyze each market using SHIRT NUMBERS + TEAM for matching
     for odds_entry in live_data['odds']:
-        lineup_key = (odds_entry['match_id'], odds_entry['player_name'], odds_entry['team'])
-        player_key = (odds_entry['player_name'], odds_entry['team'])
+        shirt_number = odds_entry.get('shirt_number')
+        team = odds_entry.get('team')
         
         # Skip team markets for now
         if odds_entry['market'] in ['Team Corners', 'Total Corners']:
             continue
+        
+        # Skip if no shirt number/team or player not found
+        if not shirt_number or not team:
+            continue
             
-        if lineup_key not in lineups_dict or player_key not in player_stats_dict:
+        player_key = (shirt_number, team)
+        if player_key not in lineups_dict or player_key not in player_stats_dict:
             continue
         
-        lineup = lineups_dict[lineup_key]
+        lineup = lineups_dict[player_key]
         player_stats = player_stats_dict[player_key]
         
         # Determine opponent team
