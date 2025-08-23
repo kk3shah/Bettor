@@ -15,6 +15,7 @@ sys.path.append(os.path.dirname(os.path.abspath(__file__)))
 from app.data.adapters.live_scraper import LiveDataScraper
 from app.services.espn_analysis import analyze_espn_based_markets
 from data_manager import CSVDataManager
+# from background_scheduler import scheduler  # Disabled for Railway deployment
 
 from app.services.value import american_to_decimal
 try:
@@ -538,4 +539,8 @@ if __name__ == '__main__':
     print("🚀 Starting Bettor Web Interface...")
     print("📱 Mobile-optimized betting analysis")
     print(f"🌐 Access at: http://localhost:{port}")
+    
+    # Background scheduler disabled for Railway deployment
+    # TODO: Add Railway cron job for daily refresh
+    
     app.run(debug=False, host='0.0.0.0', port=port)
