@@ -7,11 +7,7 @@ import re
 from typing import List, Dict, Optional, Tuple
 from datetime import datetime, timedelta
 import pandas as pd
-from selenium import webdriver
-from selenium.webdriver.common.by import By
-from selenium.webdriver.chrome.options import Options
-from selenium.webdriver.support.ui import WebDriverWait
-from selenium.webdriver.support import expected_conditions as EC
+# Selenium imports removed for Railway deployment
 
 from .base import StatsAdapter, DataAdapterError
 from app.schemas import PlayerStats, TeamStats, LineupEntry, OddsEntry
