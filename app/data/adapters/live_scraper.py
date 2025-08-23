@@ -542,8 +542,8 @@ class LiveDataScraper:
             ("Manual Fallback", self.get_confirmed_lineups_manual)
         ]
         
-        city_lineup = None
-        spurs_lineup = None
+        home_lineup = None
+        away_lineup = None
         
         for source_name, scraper_func in lineup_sources:
             try:
@@ -553,16 +553,16 @@ class LiveDataScraper:
                 if result:
                     if isinstance(result, tuple) and len(result) == 2:  
                         # Tuple of both team lineups
-                        city_lineup, spurs_lineup = result
+                        home_lineup, away_lineup = result
                         print(f"✅ Got lineups from {source_name}")
                         break
                     elif isinstance(result, list) and len(result) > 10:  
                         # Single list with all players
                         print(f"✅ Got combined lineup from {source_name}")
                         # Split by team (would need team assignment logic)
-                        city_lineup, spurs_lineup = self._split_lineup_by_team(result, home_team, away_team)
-                        if city_lineup and spurs_lineup:
-                            print(f"✅ Successfully split lineup: {len(city_lineup)} City, {len(spurs_lineup)} Spurs")
+                        home_lineup, away_lineup = self._split_lineup_by_team(result, home_team, away_team)
+                        if home_lineup and away_lineup:
+                            print(f"✅ Successfully split lineup: {len(home_lineup)} {home_team}, {len(away_lineup)} {away_team}")
                             break
                     
                 self._delay(0.5)  # Be respectful between requests
@@ -572,15 +572,15 @@ class LiveDataScraper:
                 continue
         
         # If no API/scraping worked, use manual fallback
-        if not city_lineup or not spurs_lineup:
+        if not home_lineup or not away_lineup:
             print("🔄 All API sources failed, using manual fallback...")
-            city_lineup, spurs_lineup = self.get_confirmed_lineups_manual(home_team, away_team)
+            home_lineup, away_lineup = self.get_confirmed_lineups_manual(home_team, away_team)
         
         lineups = []
         match_info = self.get_match_info(home_team, away_team)
         
         # Add home team lineup
-        for player in city_lineup:
+        for player in home_lineup:
             lineups.append({
                 'match_id': match_info['match_id'],
                 'kickoff_utc': match_info['kickoff_utc'],
@@ -593,7 +593,7 @@ class LiveDataScraper:
             })
         
         # Add away team lineup
-        for player in spurs_lineup:
+        for player in away_lineup:
             lineups.append({
                 'match_id': match_info['match_id'],
                 'kickoff_utc': match_info['kickoff_utc'],

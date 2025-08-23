@@ -38,15 +38,16 @@ chmod +x deploy.sh
 
 ## 🤖 **Fully Automated System**
 
-Once deployed, the platform runs **completely automatically**:
+Once deployed, the platform runs with **INTELLIGENT MATCH-SPECIFIC SCHEDULING**:
 
-- **🌅 06:00 UTC Daily:** Analyzes ALL matches in next 24 hours
-- **⚡ Every 2 hours:** Quick updates for imminent matches  
+- **🧠 SMART PLANNING:** Daily at 06:00 UTC - scans all matches and schedules precise refresh times
+- **🎯 T-50 REFRESH:** Automatically runs analysis 50 minutes before each match kickoff
+- **⚽ LINEUP DETECTION:** Switches to confirmed lineups when available (45min before kick)
 - **🗄️ Database Storage:** All results stored for instant access
-- **🧹 02:00 UTC Daily:** Automatic maintenance and cleanup
+- **🧹 SMART CLEANUP:** Removes completed jobs and old data automatically
 - **📱 24/7 Website:** Always accessible from any device
 
-**You never need to run anything or keep programs open!**
+**Revolutionary: No more random hourly jobs - every match gets perfect timing!**
 
 ## 🔥 LIVE BETTING ANALYSIS
 

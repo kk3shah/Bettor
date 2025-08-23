@@ -10,13 +10,22 @@ import time
 from datetime import datetime
 
 def start_scheduler():
-    """Start the automated scheduler in background."""
-    print("🤖 Starting automated scheduler...")
+    """Start the intelligent match-aware scheduler in background."""
+    print("🧠 Starting intelligent match-aware scheduler...")
     time.sleep(10)  # Let web server start first
     
+    # Check if we should use intelligent scheduler (default: yes)
+    use_intelligent = os.environ.get('USE_INTELLIGENT_SCHEDULER', 'true').lower() == 'true'
+    
     try:
-        from scheduler import main as run_scheduler
-        run_scheduler()
+        if use_intelligent:
+            print("🎯 Using INTELLIGENT scheduler (match-specific timing)")
+            from intelligent_scheduler import main as run_intelligent_scheduler
+            run_intelligent_scheduler()
+        else:
+            print("⏰ Using basic scheduler (hourly timing)")
+            from scheduler import main as run_scheduler
+            run_scheduler()
     except Exception as e:
         print(f"❌ Scheduler error: {e}")
         # Restart scheduler after error
@@ -32,8 +41,9 @@ def start_web_server():
     
     print(f"🚀 Bettor Premium starting on port {port}")
     print(f"🌍 Public access will be available soon...")
-    print(f"📊 Automated analysis every 2 hours")
-    print(f"🌅 Daily batch processing at 06:00 UTC")
+    print(f"🧠 INTELLIGENT scheduling: T-50min before each match")
+    print(f"📋 Daily planning at 06:00 UTC")
+    print(f"⚽ Live lineup detection & analysis switching")
     
     # Run in production mode
     app.run(
