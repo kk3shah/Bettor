@@ -508,31 +508,15 @@ def get_recent_analyses():
     except Exception as e:
         return jsonify({"error": str(e)}), 500
 
+@app.route('/health')
 @app.route('/api/health')
 def health_check():
-    """Health check endpoint."""
-    try:
-        from datetime import timezone
-        
-        response = {
-            "status": "healthy",
-            "timestamp": datetime.now(timezone.utc).isoformat(),
-            "database_available": bettor_service.db is not None
-        }
-        
-        if bettor_service.db:
-            try:
-                stats = bettor_service.db.get_database_stats()
-                response["database_stats"] = stats
-            except Exception as db_e:
-                response["database_error"] = str(db_e)
-        
-        return jsonify(response)
-    except Exception as e:
-        return jsonify({
-            "status": "unhealthy", 
-            "error": str(e)
-        }), 500
+    """Simple health check endpoint for Railway."""
+    return jsonify({
+        "status": "healthy",
+        "timestamp": datetime.now().isoformat(),
+        "service": "bettor-api"
+    }), 200
 
 if __name__ == '__main__':
     port = int(os.environ.get('PORT', 5000))
