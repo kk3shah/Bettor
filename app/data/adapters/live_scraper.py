@@ -608,107 +608,167 @@ class LiveDataScraper:
         print(f"✅ Generated lineups: {len(lineups)} players")
         return lineups
     
-    def get_current_season_stats(self) -> Tuple[List[Dict], List[Dict]]:
-        """Get current season player and team stats."""
-        print("📊 Getting 2024-25 Premier League stats...")
+    def get_current_season_stats(self, home_team=None, away_team=None) -> Tuple[List[Dict], List[Dict]]:
+        """Get current season player and team stats - generates for any teams."""
+        print(f"📊 Generating 2024-25 stats for {home_team} vs {away_team}...")
         
-        # Current season player stats (2024-25 season)
-        player_stats = [
-            # Arsenal 2024-25 squad
-            {'player_name': 'Gabriel Jesus', 'team': 'Arsenal', 'minutes_per_app': 82, 'shots_pg': 3.4, 'sot_pg': 1.8, 'fouls_pg': 0.8, 'passes_pg': 28, 'yc_pg': 0.03, 'apps': 26},
-            {'player_name': 'Bukayo Saka', 'team': 'Arsenal', 'minutes_per_app': 88, 'shots_pg': 3.2, 'sot_pg': 1.6, 'fouls_pg': 1.2, 'passes_pg': 45, 'yc_pg': 0.04, 'apps': 32},
-            {'player_name': 'Gabriel Martinelli', 'team': 'Arsenal', 'minutes_per_app': 80, 'shots_pg': 2.8, 'sot_pg': 1.3, 'fouls_pg': 1.0, 'passes_pg': 38, 'yc_pg': 0.05, 'apps': 28},
-            {'player_name': 'Martin Ødegaard', 'team': 'Arsenal', 'minutes_per_app': 85, 'shots_pg': 2.1, 'sot_pg': 0.9, 'fouls_pg': 1.4, 'passes_pg': 58, 'yc_pg': 0.03, 'apps': 30},
-            {'player_name': 'Declan Rice', 'team': 'Arsenal', 'minutes_per_app': 90, 'shots_pg': 1.6, 'sot_pg': 0.7, 'fouls_pg': 1.8, 'passes_pg': 72, 'yc_pg': 0.09, 'apps': 33},
-            {'player_name': 'Mikel Merino', 'team': 'Arsenal', 'minutes_per_app': 78, 'shots_pg': 1.3, 'sot_pg': 0.6, 'fouls_pg': 1.5, 'passes_pg': 65, 'yc_pg': 0.07, 'apps': 25},
-            {'player_name': 'Riccardo Calafiori', 'team': 'Arsenal', 'minutes_per_app': 82, 'shots_pg': 0.8, 'sot_pg': 0.3, 'fouls_pg': 1.2, 'passes_pg': 68, 'yc_pg': 0.06, 'apps': 22},
-            {'player_name': 'William Saliba', 'team': 'Arsenal', 'minutes_per_app': 90, 'shots_pg': 0.6, 'sot_pg': 0.3, 'fouls_pg': 0.7, 'passes_pg': 75, 'yc_pg': 0.05, 'apps': 29},
-            {'player_name': 'Gabriel Magalhães', 'team': 'Arsenal', 'minutes_per_app': 88, 'shots_pg': 0.9, 'sot_pg': 0.4, 'fouls_pg': 0.9, 'passes_pg': 70, 'yc_pg': 0.07, 'apps': 28},
-            {'player_name': 'Ben White', 'team': 'Arsenal', 'minutes_per_app': 86, 'shots_pg': 0.7, 'sot_pg': 0.3, 'fouls_pg': 1.1, 'passes_pg': 62, 'yc_pg': 0.04, 'apps': 27},
-            {'player_name': 'David Raya', 'team': 'Arsenal', 'minutes_per_app': 90, 'shots_pg': 0.0, 'sot_pg': 0.0, 'fouls_pg': 0.1, 'passes_pg': 32, 'yc_pg': 0.01, 'apps': 31},
+        def generate_player_stats(team_name: str, lineup: List[Dict]) -> List[Dict]:
+            """Generate realistic player stats for any team based on position."""
+            stats = []
+            import random
             
-            # Leeds United 2024-25 squad
-            {'player_name': 'Patrick Bamford', 'team': 'Leeds United', 'minutes_per_app': 78, 'shots_pg': 3.1, 'sot_pg': 1.5, 'fouls_pg': 0.7, 'passes_pg': 22, 'yc_pg': 0.04, 'apps': 24},
-            {'player_name': 'Daniel James', 'team': 'Leeds United', 'minutes_per_app': 75, 'shots_pg': 2.3, 'sot_pg': 1.0, 'fouls_pg': 1.2, 'passes_pg': 28, 'yc_pg': 0.03, 'apps': 26},
-            {'player_name': 'Jack Harrison', 'team': 'Leeds United', 'minutes_per_app': 80, 'shots_pg': 2.0, 'sot_pg': 0.9, 'fouls_pg': 1.4, 'passes_pg': 35, 'yc_pg': 0.05, 'apps': 25},
-            {'player_name': 'Tyler Adams', 'team': 'Leeds United', 'minutes_per_app': 85, 'shots_pg': 1.2, 'sot_pg': 0.4, 'fouls_pg': 2.0, 'passes_pg': 68, 'yc_pg': 0.12, 'apps': 22},
-            {'player_name': 'Weston McKennie', 'team': 'Leeds United', 'minutes_per_app': 82, 'shots_pg': 1.8, 'sot_pg': 0.8, 'fouls_pg': 1.6, 'passes_pg': 52, 'yc_pg': 0.08, 'apps': 24},
-            {'player_name': 'Marc Roca', 'team': 'Leeds United', 'minutes_per_app': 78, 'shots_pg': 1.1, 'sot_pg': 0.5, 'fouls_pg': 1.7, 'passes_pg': 58, 'yc_pg': 0.09, 'apps': 23},
-            {'player_name': 'Junior Firpo', 'team': 'Leeds United', 'minutes_per_app': 80, 'shots_pg': 0.6, 'sot_pg': 0.2, 'fouls_pg': 1.3, 'passes_pg': 42, 'yc_pg': 0.07, 'apps': 21},
-            {'player_name': 'Liam Cooper', 'team': 'Leeds United', 'minutes_per_app': 85, 'shots_pg': 0.5, 'sot_pg': 0.2, 'fouls_pg': 1.0, 'passes_pg': 48, 'yc_pg': 0.06, 'apps': 20},
-            {'player_name': 'Pascal Struijk', 'team': 'Leeds United', 'minutes_per_app': 87, 'shots_pg': 0.7, 'sot_pg': 0.3, 'fouls_pg': 0.9, 'passes_pg': 52, 'yc_pg': 0.05, 'apps': 22},
-            {'player_name': 'Luke Ayling', 'team': 'Leeds United', 'minutes_per_app': 82, 'shots_pg': 0.8, 'sot_pg': 0.3, 'fouls_pg': 1.4, 'passes_pg': 45, 'yc_pg': 0.08, 'apps': 19},
-            {'player_name': 'Illan Meslier', 'team': 'Leeds United', 'minutes_per_app': 90, 'shots_pg': 0.0, 'sot_pg': 0.0, 'fouls_pg': 0.1, 'passes_pg': 28, 'yc_pg': 0.02, 'apps': 25},
-        ]
+            for player in lineup:
+                position = player.get('position', 'MF')
+                player_name = player.get('player_name', f'{team_name} Player')
+                
+                # Base stats by position
+                if position == 'ST':  # Striker
+                    base_stats = {'shots_pg': 3.2, 'sot_pg': 1.6, 'fouls_pg': 0.8, 'passes_pg': 25, 'yc_pg': 0.04}
+                elif position in ['RW', 'LW']:  # Wingers  
+                    base_stats = {'shots_pg': 2.8, 'sot_pg': 1.3, 'fouls_pg': 1.2, 'passes_pg': 35, 'yc_pg': 0.05}
+                elif position in ['CAM', 'AM']:  # Attacking Mid
+                    base_stats = {'shots_pg': 2.1, 'sot_pg': 0.9, 'fouls_pg': 1.4, 'passes_pg': 55, 'yc_pg': 0.03}
+                elif position in ['CM', 'CDM']:  # Central Mid
+                    base_stats = {'shots_pg': 1.4, 'sot_pg': 0.6, 'fouls_pg': 1.7, 'passes_pg': 68, 'yc_pg': 0.08}
+                elif position in ['LB', 'RB']:  # Fullbacks
+                    base_stats = {'shots_pg': 0.7, 'sot_pg': 0.3, 'fouls_pg': 1.3, 'passes_pg': 48, 'yc_pg': 0.06}
+                elif position == 'CB':  # Centre Back
+                    base_stats = {'shots_pg': 0.6, 'sot_pg': 0.3, 'fouls_pg': 0.9, 'passes_pg': 65, 'yc_pg': 0.06}
+                else:  # GK
+                    base_stats = {'shots_pg': 0.0, 'sot_pg': 0.0, 'fouls_pg': 0.1, 'passes_pg': 30, 'yc_pg': 0.01}
+                
+                # Add some realistic variation (±20%)
+                variation = random.uniform(0.8, 1.2)
+                stats.append({
+                    'player_name': player_name,
+                    'team': team_name,
+                    'minutes_per_app': random.randint(75, 90),
+                    'shots_pg': round(base_stats['shots_pg'] * variation, 1),
+                    'sot_pg': round(base_stats['sot_pg'] * variation, 1), 
+                    'fouls_pg': round(base_stats['fouls_pg'] * variation, 1),
+                    'passes_pg': round(base_stats['passes_pg'] * variation),
+                    'yc_pg': round(base_stats['yc_pg'] * variation, 2),
+                    'apps': random.randint(20, 35)
+                })
+            return stats
         
-        # Current team stats  
-        team_stats = [
-            {'team': 'Arsenal', 'goals_for_pg': 2.3, 'goals_against_pg': 1.0, 'shots_allowed_pg': 9.8, 'cards_pg': 1.9},
-            {'team': 'Leeds United', 'goals_for_pg': 1.8, 'goals_against_pg': 1.6, 'shots_allowed_pg': 12.4, 'cards_pg': 2.2}
-        ]
+        # Get lineups to generate stats for the right players
+        lineups = self.get_premier_league_lineups(home_team or "Team A", away_team or "Team B")
+        
+        player_stats = []
+        
+        # Generate stats for home team players
+        home_lineup = [p for p in lineups if p.get('team') == (home_team or "Team A")]
+        if home_lineup:
+            player_stats.extend(generate_player_stats(home_team or "Team A", home_lineup))
+        
+        # Generate stats for away team players  
+        away_lineup = [p for p in lineups if p.get('team') == (away_team or "Team B")]
+        if away_lineup:
+            player_stats.extend(generate_player_stats(away_team or "Team B", away_lineup))
+        
+        # Generate team defensive stats
+        import random
+        team_stats = []
+        for team in [home_team or "Team A", away_team or "Team B"]:
+            # Realistic team stats with variation
+            team_stats.append({
+                'team': team,
+                'goals_for_pg': round(random.uniform(1.5, 2.8), 1),
+                'goals_against_pg': round(random.uniform(0.8, 2.0), 1),
+                'shots_allowed_pg': round(random.uniform(9.0, 14.0), 1),
+                'cards_pg': round(random.uniform(1.5, 2.5), 1)
+            })
         
         print(f"✅ Generated stats: {len(player_stats)} players, {len(team_stats)} teams")
         return player_stats, team_stats
     
-    def get_comprehensive_odds(self, match_info: Dict) -> List[Dict]:
-        """Get comprehensive betting odds for ALL player prop markets."""
-        print("💰 Getting comprehensive betting odds across all markets...")
+    def get_comprehensive_odds(self, match_info: Dict, home_team=None, away_team=None) -> List[Dict]:
+        """Generate comprehensive betting odds for any match dynamically."""
+        print(f"💰 Generating betting odds for {home_team} vs {away_team}...")
         
-        # Comprehensive odds for current match
-        odds_data = [
-            # ====== ARSENAL SHOTS MARKETS ======
-            {'match_id': match_info['match_id'], 'market': 'Player Shots', 'player_name': 'Gabriel Jesus', 'team': 'Arsenal', 'threshold': 3, 'odds_american': '+145', 'book': 'bet365'},
-            {'match_id': match_info['match_id'], 'market': 'Player Shots', 'player_name': 'Gabriel Jesus', 'team': 'Arsenal', 'threshold': 4, 'odds_american': '+220', 'book': 'bet365'},
-            {'match_id': match_info['match_id'], 'market': 'Player Shots', 'player_name': 'Bukayo Saka', 'team': 'Arsenal', 'threshold': 3, 'odds_american': '+150', 'book': 'bet365'},
-            {'match_id': match_info['match_id'], 'market': 'Player Shots', 'player_name': 'Bukayo Saka', 'team': 'Arsenal', 'threshold': 2, 'odds_american': '+105', 'book': 'bet365'},
-            {'match_id': match_info['match_id'], 'market': 'Player Shots', 'player_name': 'Gabriel Martinelli', 'team': 'Arsenal', 'threshold': 2, 'odds_american': '+110', 'book': 'bet365'},
-            {'match_id': match_info['match_id'], 'market': 'Player Shots', 'player_name': 'Martin Ødegaard', 'team': 'Arsenal', 'threshold': 2, 'odds_american': '+135', 'book': 'bet365'},
+        def generate_odds_for_players(lineup: List[Dict], team_name: str) -> List[Dict]:
+            """Generate betting odds for all players in lineup."""
+            import random
+            odds_data = []
             
-            # ====== SHOTS ON TARGET MARKETS ======
-            {'match_id': match_info['match_id'], 'market': 'Player Shots on Target', 'player_name': 'Gabriel Jesus', 'team': 'Arsenal', 'threshold': 2, 'odds_american': '+140', 'book': 'bet365'},
-            {'match_id': match_info['match_id'], 'market': 'Player Shots on Target', 'player_name': 'Bukayo Saka', 'team': 'Arsenal', 'threshold': 1, 'odds_american': '+110', 'book': 'bet365'},
-            {'match_id': match_info['match_id'], 'market': 'Player Shots on Target', 'player_name': 'Gabriel Martinelli', 'team': 'Arsenal', 'threshold': 1, 'odds_american': '+125', 'book': 'bet365'},
-            {'match_id': match_info['match_id'], 'market': 'Player Shots on Target', 'player_name': 'Patrick Bamford', 'team': 'Leeds United', 'threshold': 1, 'odds_american': '+140', 'book': 'bet365'},
+            for player in lineup:
+                player_name = player.get('player_name', f'{team_name} Player')
+                position = player.get('position', 'MF')
+                
+                # Different markets based on position
+                if position == 'ST':  # Strikers get more shot markets
+                    # Shots markets
+                    odds_data.extend([
+                        {'match_id': match_info['match_id'], 'market': 'Player Shots', 'player_name': player_name, 'team': team_name, 'threshold': 3, 'odds_american': f'+{random.randint(140, 180)}', 'book': 'bet365'},
+                        {'match_id': match_info['match_id'], 'market': 'Player Shots', 'player_name': player_name, 'team': team_name, 'threshold': 2, 'odds_american': f'+{random.randint(100, 130)}', 'book': 'bet365'},
+                        {'match_id': match_info['match_id'], 'market': 'Player Shots on Target', 'player_name': player_name, 'team': team_name, 'threshold': 1, 'odds_american': f'+{random.randint(120, 150)}', 'book': 'bet365'},
+                        {'match_id': match_info['match_id'], 'market': 'Anytime Goalscorer', 'player_name': player_name, 'team': team_name, 'threshold': 1, 'odds_american': f'+{random.randint(160, 220)}', 'book': 'bet365'},
+                    ])
+                
+                elif position in ['RW', 'LW', 'CAM']:  # Attacking players
+                    odds_data.extend([
+                        {'match_id': match_info['match_id'], 'market': 'Player Shots', 'player_name': player_name, 'team': team_name, 'threshold': 2, 'odds_american': f'+{random.randint(110, 150)}', 'book': 'bet365'},
+                        {'match_id': match_info['match_id'], 'market': 'Player Shots on Target', 'player_name': player_name, 'team': team_name, 'threshold': 1, 'odds_american': f'+{random.randint(120, 160)}', 'book': 'bet365'},
+                        {'match_id': match_info['match_id'], 'market': 'Anytime Goalscorer', 'player_name': player_name, 'team': team_name, 'threshold': 1, 'odds_american': f'+{random.randint(200, 300)}', 'book': 'bet365'},
+                        {'match_id': match_info['match_id'], 'market': 'Player Fouls', 'player_name': player_name, 'team': team_name, 'threshold': 1, 'odds_american': f'+{random.randint(110, 140)}', 'book': 'bet365'},
+                    ])
+                
+                elif position in ['CM', 'CDM']:  # Midfielders
+                    odds_data.extend([
+                        {'match_id': match_info['match_id'], 'market': 'Player Fouls', 'player_name': player_name, 'team': team_name, 'threshold': 2, 'odds_american': f'+{random.randint(100, 130)}', 'book': 'bet365'},
+                        {'match_id': match_info['match_id'], 'market': 'Player Passes', 'player_name': player_name, 'team': team_name, 'threshold': random.choice([50, 55, 60, 65]), 'odds_american': f'+{random.randint(110, 125)}', 'book': 'bet365'},
+                        {'match_id': match_info['match_id'], 'market': 'Player Card', 'player_name': player_name, 'team': team_name, 'threshold': 1, 'odds_american': f'+{random.randint(180, 220)}', 'book': 'bet365'},
+                    ])
+                
+                elif position in ['LB', 'RB', 'CB']:  # Defenders  
+                    odds_data.extend([
+                        {'match_id': match_info['match_id'], 'market': 'Player Fouls', 'player_name': player_name, 'team': team_name, 'threshold': 1, 'odds_american': f'+{random.randint(120, 150)}', 'book': 'bet365'},
+                        {'match_id': match_info['match_id'], 'market': 'Player Card', 'player_name': player_name, 'team': team_name, 'threshold': 1, 'odds_american': f'+{random.randint(170, 210)}', 'book': 'bet365'},
+                    ])
+                    
+                    # Fullbacks get pass markets too
+                    if position in ['LB', 'RB']:
+                        odds_data.append({
+                            'match_id': match_info['match_id'], 'market': 'Player Passes', 'player_name': player_name, 'team': team_name, 
+                            'threshold': random.choice([40, 45, 50]), 'odds_american': f'+{random.randint(115, 130)}', 'book': 'bet365'
+                        })
+                
+                # Everyone gets basic fouls market (if not already added)
+                if not any(o['market'] == 'Player Fouls' and o['player_name'] == player_name for o in odds_data):
+                    odds_data.append({
+                        'match_id': match_info['match_id'], 'market': 'Player Fouls', 'player_name': player_name, 'team': team_name,
+                        'threshold': 1, 'odds_american': f'+{random.randint(130, 170)}', 'book': 'bet365'
+                    })
             
-            # ====== GOALS MARKETS ======
-            {'match_id': match_info['match_id'], 'market': 'Anytime Goalscorer', 'player_name': 'Gabriel Jesus', 'team': 'Arsenal', 'threshold': 1, 'odds_american': '+180', 'book': 'bet365'},
-            {'match_id': match_info['match_id'], 'market': 'Anytime Goalscorer', 'player_name': 'Bukayo Saka', 'team': 'Arsenal', 'threshold': 1, 'odds_american': '+220', 'book': 'bet365'},
-            {'match_id': match_info['match_id'], 'market': 'Anytime Goalscorer', 'player_name': 'Gabriel Martinelli', 'team': 'Arsenal', 'threshold': 1, 'odds_american': '+240', 'book': 'bet365'},
-            {'match_id': match_info['match_id'], 'market': 'Anytime Goalscorer', 'player_name': 'Patrick Bamford', 'team': 'Leeds United', 'threshold': 1, 'odds_american': '+280', 'book': 'bet365'},
-            {'match_id': match_info['match_id'], 'market': 'Anytime Goalscorer', 'player_name': 'Daniel James', 'team': 'Leeds United', 'threshold': 1, 'odds_american': '+320', 'book': 'bet365'},
-            
-            # ====== FOULS COMMITTED MARKETS ======
-            {'match_id': match_info['match_id'], 'market': 'Player Fouls', 'player_name': 'Declan Rice', 'team': 'Arsenal', 'threshold': 2, 'odds_american': '+120', 'book': 'bet365'},
-            {'match_id': match_info['match_id'], 'market': 'Player Fouls', 'player_name': 'Tyler Adams', 'team': 'Leeds United', 'threshold': 2, 'odds_american': '+105', 'book': 'bet365'},
-            {'match_id': match_info['match_id'], 'market': 'Player Fouls', 'player_name': 'Weston McKennie', 'team': 'Leeds United', 'threshold': 2, 'odds_american': '+115', 'book': 'bet365'},
-            {'match_id': match_info['match_id'], 'market': 'Player Fouls', 'player_name': 'Gabriel Martinelli', 'team': 'Arsenal', 'threshold': 1, 'odds_american': '-130', 'book': 'bet365'},
-            
-            # ====== CARDS MARKETS ======
-            {'match_id': match_info['match_id'], 'market': 'Player Card', 'player_name': 'Tyler Adams', 'team': 'Leeds United', 'threshold': 1, 'odds_american': '+180', 'book': 'bet365'},
-            {'match_id': match_info['match_id'], 'market': 'Player Card', 'player_name': 'Declan Rice', 'team': 'Arsenal', 'threshold': 1, 'odds_american': '+200', 'book': 'bet365'},
-            {'match_id': match_info['match_id'], 'market': 'Player Card', 'player_name': 'Luke Ayling', 'team': 'Leeds United', 'threshold': 1, 'odds_american': '+190', 'book': 'bet365'},
-            {'match_id': match_info['match_id'], 'market': 'Player Card', 'player_name': 'Gabriel Magalhães', 'team': 'Arsenal', 'threshold': 1, 'odds_american': '+210', 'book': 'bet365'},
-            
-            # ====== PASSES/TOUCHES MARKETS ======
-            {'match_id': match_info['match_id'], 'market': 'Player Passes', 'player_name': 'Martin Ødegaard', 'team': 'Arsenal', 'threshold': 55, 'odds_american': '+115', 'book': 'bet365'},
-            {'match_id': match_info['match_id'], 'market': 'Player Passes', 'player_name': 'Declan Rice', 'team': 'Arsenal', 'threshold': 70, 'odds_american': '+110', 'book': 'bet365'},
-            {'match_id': match_info['match_id'], 'market': 'Player Passes', 'player_name': 'Tyler Adams', 'team': 'Leeds United', 'threshold': 65, 'odds_american': '+120', 'book': 'bet365'},
-            
-            # ====== CORNERS MARKETS (Team-based) ======
-            {'match_id': match_info['match_id'], 'market': 'Team Corners', 'player_name': 'Arsenal', 'team': 'Arsenal', 'threshold': 5, 'odds_american': '+115', 'book': 'bet365'},
-            {'match_id': match_info['match_id'], 'market': 'Team Corners', 'player_name': 'Leeds United', 'team': 'Leeds United', 'threshold': 4, 'odds_american': '+130', 'book': 'bet365'},
-            {'match_id': match_info['match_id'], 'market': 'Total Corners', 'player_name': 'Match Total', 'team': 'Both', 'threshold': 9, 'odds_american': '+110', 'book': 'bet365'},
-            
-            # ====== ADDITIONAL LEEDS PLAYERS (SHOTS) ======
-            {'match_id': match_info['match_id'], 'market': 'Player Shots', 'player_name': 'Patrick Bamford', 'team': 'Leeds United', 'threshold': 3, 'odds_american': '+150', 'book': 'bet365'},
-            {'match_id': match_info['match_id'], 'market': 'Player Shots', 'player_name': 'Patrick Bamford', 'team': 'Leeds United', 'threshold': 2, 'odds_american': '+110', 'book': 'bet365'},
-            {'match_id': match_info['match_id'], 'market': 'Player Shots', 'player_name': 'Daniel James', 'team': 'Leeds United', 'threshold': 2, 'odds_american': '+125', 'book': 'bet365'},
-            {'match_id': match_info['match_id'], 'market': 'Player Shots', 'player_name': 'Jack Harrison', 'team': 'Leeds United', 'threshold': 2, 'odds_american': '+135', 'book': 'bet365'},
-            {'match_id': match_info['match_id'], 'market': 'Player Shots', 'player_name': 'Weston McKennie', 'team': 'Leeds United', 'threshold': 2, 'odds_american': '+145', 'book': 'bet365'},
+            return odds_data
+        
+        # Get lineups to generate odds for the right players
+        lineups = self.get_premier_league_lineups(home_team or "Team A", away_team or "Team B")
+        
+        all_odds = []
+        
+        # Generate odds for home team
+        home_lineup = [p for p in lineups if p.get('team') == (home_team or "Team A")]
+        if home_lineup:
+            all_odds.extend(generate_odds_for_players(home_lineup, home_team or "Team A"))
+        
+        # Generate odds for away team
+        away_lineup = [p for p in lineups if p.get('team') == (away_team or "Team B")]  
+        if away_lineup:
+            all_odds.extend(generate_odds_for_players(away_lineup, away_team or "Team B"))
+        
+        # Add team markets
+        import random
+        team_markets = [
+            {'match_id': match_info['match_id'], 'market': 'Team Corners', 'player_name': home_team or "Team A", 'team': home_team or "Team A", 'threshold': random.choice([4, 5, 6]), 'odds_american': f'+{random.randint(110, 130)}', 'book': 'bet365'},
+            {'match_id': match_info['match_id'], 'market': 'Team Corners', 'player_name': away_team or "Team B", 'team': away_team or "Team B", 'threshold': random.choice([3, 4, 5]), 'odds_american': f'+{random.randint(115, 135)}', 'book': 'bet365'},
+            {'match_id': match_info['match_id'], 'market': 'Total Corners', 'player_name': 'Match Total', 'team': 'Both', 'threshold': random.choice([8, 9, 10]), 'odds_american': f'+{random.randint(105, 120)}', 'book': 'bet365'},
         ]
+        all_odds.extend(team_markets)
         
-        print(f"✅ Generated {len(odds_data)} comprehensive betting markets")
-        return odds_data
+        print(f"✅ Generated {len(all_odds)} betting markets for {len(home_lineup + away_lineup)} players")
+        return all_odds
     
     def get_current_odds(self, match_info: Dict) -> List[Dict]:
         """Fallback method for basic odds."""
@@ -800,11 +860,11 @@ class LiveDataScraper:
             # Get lineups
             lineups = self.get_premier_league_lineups(home_team, away_team)
             
-            # Get player and team stats
-            player_stats, team_stats = self.get_current_season_stats()
+            # Get player and team stats for the specific teams
+            player_stats, team_stats = self.get_current_season_stats(home_team, away_team)
             
-            # Get comprehensive odds from multiple sources
-            odds = self.get_comprehensive_odds(match_info)
+            # Get comprehensive odds for the specific teams
+            odds = self.get_comprehensive_odds(match_info, home_team, away_team)
             
             print("✅ Successfully gathered all live match data!")
             
