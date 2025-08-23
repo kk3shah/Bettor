@@ -1,0 +1,29 @@
+{
+  "status": "success",
+  "results": {},
+  "season": {
+    "year": 2025,
+    "type": 13481,
+    "name": "2025-26 English Premier League",
+    "displayName": "2025-26 English Premier League"
+  },
+  "requestedSeason": {
+    "year": 2025,
+    "type": 13481,
+    "name": "2025-26 English Premier League",
+    "displayName": "2025-26 English Premier League"
+  },
+  "team": {
+    "id": "382",
+    "abbreviation": "MNC",
+    "location": "Manchester City",
+    "name": "Manchester City",
+    "displayName": "Manchester City",
+    "color": "99c5ea",
+    "logo": "https://a.espncdn.com/i/teamlogos/soccer/500/382.png",
+    "recordSummary": "1-0-1",
+    "seasonSummary": "2025-26",
+    "standingSummary": "4th in English Premier League",
+    "isNational": false
+  }
+}

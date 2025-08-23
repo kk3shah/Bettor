@@ -78,6 +78,37 @@ class CSVDataManager:
             print(f"❌ Error getting match ID: {e}")
             return None
     
+    def store_match(self, home_team, away_team, league, kickoff_time):
+        """Store a single match to CSV."""
+        # Get next match ID
+        next_id = 1
+        if self.matches_file.exists():
+            with open(self.matches_file, 'r', encoding='utf-8') as f:
+                reader = csv.DictReader(f)
+                for row in reader:
+                    next_id = max(next_id, int(row['match_id']) + 1)
+        
+        # Check if file exists to determine if we need headers
+        file_exists = self.matches_file.exists()
+        
+        with open(self.matches_file, 'a', newline='', encoding='utf-8') as f:
+            writer = csv.writer(f)
+            
+            if not file_exists:
+                writer.writerow(['match_id', 'home_team', 'away_team', 'league', 'kickoff_time', 'stored_at'])
+            
+            writer.writerow([
+                next_id,
+                home_team,
+                away_team,
+                league,
+                kickoff_time,
+                datetime.now().isoformat()
+            ])
+        
+        print(f"✅ Match stored: {home_team} vs {away_team} (ID: {next_id})")
+        return next_id
+    
     def get_matches(self):
         """Get matches from CSV with match IDs."""
         if not self.matches_file.exists():
@@ -271,6 +302,25 @@ class CSVDataManager:
             return age_hours < max_age_hours
         except:
             return False
+    
+    def clear_all_data(self):
+        """Clear all CSV data files."""
+        try:
+            if self.matches_file.exists():
+                self.matches_file.unlink()
+                print("🗑️ Cleared matches.csv")
+            
+            if self.analysis_file.exists():
+                self.analysis_file.unlink()
+                print("🗑️ Cleared analysis.csv")
+                
+            if self.players_file.exists():
+                self.players_file.unlink()
+                print("🗑️ Cleared players.csv")
+                
+            print("✅ All CSV data cleared")
+        except Exception as e:
+            print(f"❌ Error clearing data: {e}")
     
     def cleanup_old_data(self, days_to_keep=1):
         """Clean up old CSV data."""

@@ -1,0 +1,29 @@
+{
+  "status": "success",
+  "results": {},
+  "season": {
+    "year": 2025,
+    "type": 13481,
+    "name": "2025-26 English Premier League",
+    "displayName": "2025-26 English Premier League"
+  },
+  "requestedSeason": {
+    "year": 2025,
+    "type": 13481,
+    "name": "2025-26 English Premier League",
+    "displayName": "2025-26 English Premier League"
+  },
+  "team": {
+    "id": "359",
+    "abbreviation": "ARS",
+    "location": "Arsenal",
+    "name": "Arsenal",
+    "displayName": "Arsenal",
+    "color": "e20520",
+    "logo": "https://a.espncdn.com/i/teamlogos/soccer/500/359.png",
+    "recordSummary": "1-0-0",
+    "seasonSummary": "2025-26",
+    "standingSummary": "7th in English Premier League",
+    "isNational": false
+  }
+}
