@@ -476,7 +476,7 @@ class BettorWebService:
         return False
     
     def run_match_analysis(self, home_team, away_team):
-        """Get analysis for selected match from CSV data."""
+        """Get analysis for selected match - FIRST check if match exists in ESPN API."""
         try:
             # Decode HTML entities in team names (e.g., &amp; -> &)
             import html
@@ -485,14 +485,31 @@ class BettorWebService:
             
             print(f"🔍 Looking for analysis: {home_team} vs {away_team}...")
             
-            # Get analysis from CSV file directly
+            # STEP 1: Verify this match exists in current ESPN API data
+            current_matches = self.get_upcoming_matches(24)
+            match_found_in_espn = False
+            espn_match_id = None
+            
+            for match in current_matches:
+                if (match.get('home_team') == home_team and match.get('away_team') == away_team):
+                    match_found_in_espn = True
+                    espn_match_id = match.get('id')
+                    print(f"✅ Match found in ESPN API with ID: {espn_match_id}")
+                    break
+            
+            if not match_found_in_espn:
+                print(f"❌ Match {home_team} vs {away_team} not found in current ESPN API data")
+                return {"error": f"Match not available in current ESPN data. Available matches: {[f\"{m.get('home_team')} vs {m.get('away_team')}\" for m in current_matches[:3]]}"}
+            
+            # STEP 2: Get analysis from CSV file directly
             import csv
             import json
             from pathlib import Path
             
             analysis_file = Path("data/analysis.csv")
             if not analysis_file.exists():
-                return {"error": "No analysis data available"}
+                print("❌ No analysis.csv file found - generating analysis on demand...")
+                return self._generate_live_analysis(home_team, away_team, espn_match_id)
             
             # Read analysis CSV and find matching entries
             matching_analysis = []
@@ -655,6 +672,88 @@ class BettorWebService:
             import traceback
             traceback.print_exc()
             return {"error": f"Analysis failed: {str(e)}"}
+
+    def _generate_live_analysis(self, home_team, away_team, espn_match_id):
+        """Generate analysis on-demand for ESPN match when CSV data is missing/outdated."""
+        try:
+            print(f"🔄 Generating live analysis for {home_team} vs {away_team} (ESPN ID: {espn_match_id})")
+            
+            # Import the analysis generation function
+            from use_real_espn_rosters import generate_analysis_for_match_real_espn
+            
+            # Generate analysis for this specific match
+            analysis_results = generate_analysis_for_match_real_espn(home_team, away_team)
+            
+            if not analysis_results:
+                return {"error": "Unable to generate analysis - no player data available"}
+            
+            # Format the results for the frontend
+            formatted_analysis = []
+            for analysis in analysis_results:
+                try:
+                    formatted_analysis.append({
+                        "player": analysis.get("player", "Unknown"),
+                        "prop": analysis.get("prop", "Unknown"),
+                        "threshold": analysis.get("threshold", 1),
+                        "model_prob": analysis.get("model_prob", 0.0),
+                        "final_score": analysis.get("final_score", 50),
+                        "confidence": self._calculate_confidence(analysis.get("final_score", 50)),
+                        "profitable_odds_min": self._calculate_profitable_odds(analysis.get("final_score", 50)),
+                        "profitable_odds_max": 10.0,  # Max reasonable odds
+                        "games_played": analysis.get("games_played", 0),
+                        "rate_per_game": analysis.get("rate_per_game", 0.0),
+                        "position": analysis.get("position", "Unknown"),
+                        "age": analysis.get("age", 0),
+                        "jersey_number": analysis.get("jersey_number", ""),
+                        "is_profiled": analysis.get("is_profiled", False),
+                        "is_healthy": analysis.get("is_healthy", True)
+                    })
+                except Exception as e:
+                    print(f"⚠️ Error formatting analysis: {e}")
+                    continue
+            
+            if not formatted_analysis:
+                return {"error": "No valid analysis generated"}
+            
+            return {
+                "analysis": formatted_analysis,
+                "match": {
+                    "home_team": home_team,
+                    "away_team": away_team,
+                    "espn_id": espn_match_id
+                },
+                "generated_live": True,
+                "timestamp": datetime.now().isoformat()
+            }
+            
+        except Exception as e:
+            print(f"❌ Live analysis generation failed: {e}")
+            import traceback
+            traceback.print_exc()
+            return {"error": f"Live analysis failed: {str(e)}"}
+    
+    def _calculate_confidence(self, final_score):
+        """Calculate confidence level based on final score."""
+        if final_score >= 70:
+            return "High"
+        elif final_score >= 55:
+            return "Medium"
+        else:
+            return "Low"
+    
+    def _calculate_profitable_odds(self, final_score):
+        """Calculate minimum profitable odds based on final score."""
+        # Higher final score = lower minimum odds needed
+        if final_score >= 80:
+            return 1.2
+        elif final_score >= 70:
+            return 1.5
+        elif final_score >= 60:
+            return 2.0
+        elif final_score >= 50:
+            return 2.5
+        else:
+            return 3.0
 
     def _find_match_id(self, home_team, away_team):
         """Find match ID by team names (fuzzy matching)."""
