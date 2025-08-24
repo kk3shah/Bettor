@@ -499,7 +499,8 @@ class BettorWebService:
             
             if not match_found_in_espn:
                 print(f"❌ Match {home_team} vs {away_team} not found in current ESPN API data")
-                return {"error": f"Match not available in current ESPN data. Available matches: {[f\"{m.get('home_team')} vs {m.get('away_team')}\" for m in current_matches[:3]]}"}
+                available_matches = [f"{m.get('home_team')} vs {m.get('away_team')}" for m in current_matches[:3]]
+                return {"error": f"Match not available in current ESPN data. Available matches: {available_matches}"}
             
             # STEP 2: Get analysis from CSV file directly
             import csv
