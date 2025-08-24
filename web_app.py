@@ -666,6 +666,11 @@ class BettorWebService:
                 "all_bets": matching_analysis        # Frontend expects this
             }
             
+            # If no matching analysis found in CSV, generate live analysis
+            if not matching_analysis:
+                print(f"🔄 No CSV analysis found for {home_team} vs {away_team}, generating live analysis...")
+                return self._generate_live_analysis(home_team, away_team, espn_match_id)
+            
             return analysis_results
             
         except Exception as e:
