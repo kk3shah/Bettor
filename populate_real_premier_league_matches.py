@@ -39,29 +39,37 @@ def get_real_upcoming_fixtures(supported_teams):
         events = data.get('events', [])
         
         fixtures = []
-        now = datetime.now()
-        print(f"INFO: Current time: {now}")
-        print(f"INFO: Looking for matches between {now} and {now + timedelta(hours=24)}")
+        now = datetime.utcnow()  # Use UTC time for consistent comparison
+        print(f"INFO: Current UTC time: {now}")
+        print(f"INFO: Looking for live/upcoming matches (UTC timezone)")
         
         for event in events:
             try:
                 # Get match date
                 match_date_str = event.get('date', '')
                 if match_date_str:
-                    # Parse ESPN date format
+                    # Parse ESPN date format and keep as UTC
                     match_date = datetime.fromisoformat(match_date_str.replace('Z', '+00:00'))
-                    # Make timezone naive for comparison
-                    match_date = match_date.replace(tzinfo=None)
+                    # Convert to UTC naive datetime for comparison
+                    match_date = match_date.utctimetuple()
+                    match_date = datetime(*match_date[:6])  # Convert back to datetime
                 else:
                     continue
                 
-                # Only get upcoming matches (next 24 hours from now)
-                if match_date < now:
-                    print(f"⏰ Skipping past match: {match_date}")
+                # Only get live/upcoming matches (exclude finished matches older than 2 hours)
+                time_diff_hours = (match_date - now).total_seconds() / 3600
+                
+                if time_diff_hours < -2:  # Match finished more than 2 hours ago
+                    print(f"⏰ Skipping finished match: {match_date} (finished {abs(time_diff_hours):.1f}h ago)")
                     continue
-                if match_date > now + timedelta(hours=24):
-                    print(f"⏰ Skipping future match (>24h): {match_date}")
+                if time_diff_hours > 24:  # Match more than 24 hours in future
+                    print(f"⏰ Skipping future match (>24h): {match_date} (in {time_diff_hours:.1f}h)")
                     continue
+                
+                if time_diff_hours <= 0:
+                    print(f"✅ Found LIVE match: {match_date} (started {abs(time_diff_hours):.1f}h ago)")
+                else:
+                    print(f"✅ Found upcoming match: {match_date} (in {time_diff_hours:.1f}h)")
                 
                 print(f"SUCCESS: Found upcoming match at: {match_date}")
                 
