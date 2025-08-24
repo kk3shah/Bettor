@@ -1,0 +1,256 @@
+{
+  "learning_data": {
+    "Djordje Petrovic_Player Yellow Cards": {
+      "predictions": 1,
+      "total_error": 0.00948568565216798,
+      "adjustment": 0.0009485685652167981
+    },
+    "Djordje Petrovic_Player Fouls": {
+      "predictions": 1,
+      "total_error": 0.09518480342232746,
+      "adjustment": 0.009518480342232747
+    },
+    "Djordje Petrovic_Player Saves": {
+      "predictions": 1,
+      "total_error": 0.0026274796133387013,
+      "adjustment": -0.0002627479613338701
+    },
+    "Adam Smith_Player Yellow Cards": {
+      "predictions": 1,
+      "total_error": 0.0039583516604856095,
+      "adjustment": -0.00039583516604856095
+    },
+    "Adam Smith_Player Shots": {
+      "predictions": 1,
+      "total_error": 0.06265353879834151,
+      "adjustment": 0.006265353879834151
+    },
+    "Adam Smith_Player Shots on Target": {
+      "predictions": 1,
+      "total_error": 0.046909744944127585,
+      "adjustment": 0.004690974494412759
+    },
+    "Adam Smith_Player Assists": {
+      "predictions": 1,
+      "total_error": 0.0708,
+      "adjustment": -0.00708
+    },
+    "Adam Smith_Player Goals": {
+      "predictions": 1,
+      "total_error": 0.0534,
+      "adjustment": -0.005340000000000001
+    },
+    "Adam Smith_Player Fouls": {
+      "predictions": 1,
+      "total_error": 0.014740983467653679,
+      "adjustment": 0.001474098346765368
+    },
+    "Marcos Senesi_Player Yellow Cards": {
+      "predictions": 1,
+      "total_error": 0.0336123014518587,
+      "adjustment": -0.00336123014518587
+    },
+    "Marcos Senesi_Player Shots": {
+      "predictions": 1,
+      "total_error": 0.007661705703170901,
+      "adjustment": 0.0007661705703170901
+    },
+    "Marcos Senesi_Player Shots on Target": {
+      "predictions": 1,
+      "total_error": 0.015820597060464736,
+      "adjustment": -0.0015820597060464737
+    },
+    "Marcos Senesi_Player Assists": {
+      "predictions": 1,
+      "total_error": 0.058638415431583615,
+      "adjustment": -0.005863841543158362
+    },
+    "Marcos Senesi_Player Goals": {
+      "predictions": 1,
+      "total_error": 0.04707386302114184,
+      "adjustment": 0.004707386302114184
+    },
+    "Marcos Senesi_Player Fouls": {
+      "predictions": 1,
+      "total_error": 0.09460633648839756,
+      "adjustment": 0.009460633648839756
+    },
+    "Chris Mepham_Player Yellow Cards": {
+      "predictions": 1,
+      "total_error": 0.06640444097706005,
+      "adjustment": -0.006640444097706005
+    },
+    "Chris Mepham_Player Shots": {
+      "predictions": 1,
+      "total_error": 0.0037938917880671053,
+      "adjustment": -0.00037938917880671054
+    },
+    "Chris Mepham_Player Shots on Target": {
+      "predictions": 1,
+      "total_error": 0.017563045333004235,
+      "adjustment": 0.0017563045333004236
+    },
+    "Chris Mepham_Player Assists": {
+      "predictions": 1,
+      "total_error": 0.09779789630627281,
+      "adjustment": 0.009779789630627282
+    },
+    "Chris Mepham_Player Goals": {
+      "predictions": 1,
+      "total_error": 0.0488,
+      "adjustment": -0.004880000000000001
+    },
+    "Chris Mepham_Player Fouls": {
+      "predictions": 1,
+      "total_error": 0.06596715862304575,
+      "adjustment": -0.006596715862304575
+    },
+    "James Hill_Player Yellow Cards": {
+      "predictions": 1,
+      "total_error": 0.08089399938913236,
+      "adjustment": -0.008089399938913236
+    },
+    "James Hill_Player Shots": {
+      "predictions": 1,
+      "total_error": 0.03251418626641933,
+      "adjustment": 0.0032514186266419335
+    },
+    "James Hill_Player Shots on Target": {
+      "predictions": 1,
+      "total_error": 0.025582903777304433,
+      "adjustment": 0.0025582903777304437
+    },
+    "James Hill_Player Assists": {
+      "predictions": 1,
+      "total_error": 0.06964720927446569,
+      "adjustment": -0.006964720927446569
+    },
+    "James Hill_Player Goals": {
+      "predictions": 1,
+      "total_error": 0.002628974501015069,
+      "adjustment": -0.0002628974501015069
+    },
+    "James Hill_Player Fouls": {
+      "predictions": 1,
+      "total_error": 0.010771596773954784,
+      "adjustment": -0.0010771596773954783
+    },
+    "David Brooks_Player Yellow Cards": {
+      "predictions": 1,
+      "total_error": 0.03940424271062831,
+      "adjustment": 0.0039404242710628316
+    },
+    "David Brooks_Player Shots": {
+      "predictions": 1,
+      "total_error": 0.06416326663387073,
+      "adjustment": 0.0064163266633870735
+    },
+    "David Brooks_Player Shots on Target": {
+      "predictions": 1,
+      "total_error": 0.02644973817033175,
+      "adjustment": 0.002644973817033175
+    },
+    "David Brooks_Player Assists": {
+      "predictions": 1,
+      "total_error": 0.09284022162085215,
+      "adjustment": -0.009284022162085214
+    },
+    "David Brooks_Player Goals": {
+      "predictions": 1,
+      "total_error": 0.022275735203486247,
+      "adjustment": 0.002227573520348625
+    },
+    "David Brooks_Player Fouls": {
+      "predictions": 1,
+      "total_error": 0.033023104931270614,
+      "adjustment": 0.0033023104931270615
+    },
+    "Ryan Christie_Player Yellow Cards": {
+      "predictions": 1,
+      "total_error": 0.03116655357912071,
+      "adjustment": -0.003116655357912071
+    },
+    "Ryan Christie_Player Shots": {
+      "predictions": 1,
+      "total_error": 0.010884820961280461,
+      "adjustment": 0.0010884820961280463
+    },
+    "Ryan Christie_Player Shots on Target": {
+      "predictions": 1,
+      "total_error": 0.04703710597821442,
+      "adjustment": -0.004703710597821442
+    },
+    "Ryan Christie_Player Assists": {
+      "predictions": 1,
+      "total_error": 0.013451358324823304,
+      "adjustment": -0.0013451358324823304
+    },
+    "Ryan Christie_Player Goals": {
+      "predictions": 1,
+      "total_error": 0.05971926033286974,
+      "adjustment": -0.0059719260332869745
+    },
+    "Ryan Christie_Player Fouls": {
+      "predictions": 1,
+      "total_error": 0.08443930651675785,
+      "adjustment": -0.008443930651675785
+    },
+    "Philip Billing_Player Yellow Cards": {
+      "predictions": 1,
+      "total_error": 0.017119089026381623,
+      "adjustment": -0.0017119089026381624
+    },
+    "Philip Billing_Player Shots": {
+      "predictions": 1,
+      "total_error": 0.08630756143921381,
+      "adjustment": 0.008630756143921382
+    },
+    "Philip Billing_Player Shots on Target": {
+      "predictions": 1,
+      "total_error": 0.023774946490858095,
+      "adjustment": 0.00237749464908581
+    },
+    "Philip Billing_Player Assists": {
+      "predictions": 1,
+      "total_error": 0.07600350888858812,
+      "adjustment": -0.007600350888858812
+    },
+    "Philip Billing_Player Goals": {
+      "predictions": 1,
+      "total_error": 0.08220958434265511,
+      "adjustment": -0.008220958434265511
+    },
+    "Philip Billing_Player Fouls": {
+      "predictions": 1,
+      "total_error": 0.04745751329154374,
+      "adjustment": -0.004745751329154374
+    },
+    "Evanilson_Player Yellow Cards": {
+      "predictions": 1,
+      "total_error": 0.01642558092017854,
+      "adjustment": -0.001642558092017854
+    },
+    "Evanilson_Player Shots": {
+      "predictions": 1,
+      "total_error": 0.005063201784215543,
+      "adjustment": -0.0005063201784215543
+    },
+    "Evanilson_Player Shots on Target": {
+      "predictions": 1,
+      "total_error": 0.055128811498148717,
+      "adjustment": -0.005512881149814872
+    },
+    "Evanilson_Player Assists": {
+      "predictions": 1,
+      "total_error": 0.09599439333599175,
+      "adjustment": -0.009599439333599176
+    },
+    "Evanilson_Player Goals": {
+      "predictions": 1,
+      "total_error": 0.07023344589653896,
+      "adjustment": -0.007023344589653896
+    }
+  },
+  "last_updated": "2025-08-24T08:45:36.530092",
+  "total_predictions": 50
+}

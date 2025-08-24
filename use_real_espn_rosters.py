@@ -8,6 +8,7 @@ import random
 from pathlib import Path
 from datetime import datetime
 from app.data.adapters.live_scraper import LiveDataScraper
+from simple_ml_model import ml_model
 import time
 
 def get_realistic_player_stats_for_position(position):
@@ -60,13 +61,16 @@ def get_realistic_player_stats_for_position(position):
     stats = position_stats.get(position, position_stats['Midfielder']).copy()
     
     # Add some variance
-    for key in stats:
-        if key != 'minutes_per_game':
-            variance = random.uniform(0.7, 1.3)
-            stats[key] *= variance
+    # Use position-based games played (realistic season stats)
+    if position == 'Goalkeeper':
+        stats['games_played'] = 25  # Goalkeepers play most games
+    elif position == 'Defender':
+        stats['games_played'] = 28  # Defenders play regularly
+    elif position == 'Midfielder':
+        stats['games_played'] = 30  # Midfielders play most
+    else:  # Forward
+        stats['games_played'] = 26  # Forwards rotate more
     
-    # Add games played (realistic season stats)
-    stats['games_played'] = random.randint(15, 35)
     stats['position'] = position
     
     return stats
@@ -193,36 +197,50 @@ def generate_analysis_for_match_real_espn(scraper, match_id, home_team, away_tea
             # Calculate model probability using Poisson
             model_prob = calculate_poisson_probability(rate_per_game, threshold)
             
-            # Generate realistic bookmaker odds (with some inefficiency)
-            fair_odds = 1 / model_prob
-            bookmaker_margin = random.uniform(1.05, 1.15)  # 5-15% margin
-            bookmaker_odds = fair_odds * bookmaker_margin
+            # Get additional ESPN data for Final Score calculation
+            espn_age = player.get('age', 25)
+            espn_jersey = player.get('jersey', 20)
+            espn_profiled = player.get('profiled', False)
+            espn_injuries = player.get('injuries', [])
+            espn_healthy = len(espn_injuries) == 0
             
-            # Calculate edge
-            implied_prob = 1 / bookmaker_odds
-            edge = model_prob - implied_prob
+            # Enhanced analysis data with ESPN attributes
+            enhanced_data = {
+                'player': player.get('player_name', 'Unknown'),
+                'prop': prop_name,
+                'threshold': str(threshold),
+                'model_prob': model_prob,
+                'rate_per_game': rate_per_game,
+                'games_played': player_stats['games_played'],
+                'position': full_position,
+                'age': espn_age,
+                'jersey_number': espn_jersey,
+                'is_profiled': espn_profiled,
+                'is_healthy': espn_healthy
+            }
             
-            # Kelly criterion
-            kelly = max(0, edge / (bookmaker_odds - 1)) if bookmaker_odds > 1 else 0
-            kelly = min(kelly, 0.25)  # Cap at 25%
+            # Calculate Final Score using ML model
+            final_score = ml_model.calculate_final_score(enhanced_data)
             
-            # Suggested stake (5% of bankroll base)
+            # Calculate suggested stake based on Final Score
             base_stake = 50  # $50 base
-            suggested_stake = base_stake * (1 + kelly * 2)
+            score_multiplier = final_score / 50  # Scale based on final score
+            suggested_stake = base_stake * max(0.5, min(2.0, score_multiplier))
             
             analysis_data = {
                 'player': player.get('player_name', 'Unknown'),  # REAL ESPN player name
                 'prop': prop_name,
                 'threshold': str(threshold),
                 'model_prob': round(model_prob, 4),
-                'implied_prob': round(implied_prob, 4),
-                'edge': round(edge, 4),
-                'odds': f"{bookmaker_odds:.2f}",
-                'kelly': round(kelly, 4),
+                'final_score': round(final_score, 1),
                 'suggested_stake': round(suggested_stake, 2),
                 'games_played': player_stats['games_played'],
-                'position': player_stats['position'],
-                'rate_per_game': round(rate_per_game, 3)
+                'position': full_position,
+                'rate_per_game': round(rate_per_game, 3),
+                'age': espn_age,
+                'jersey_number': espn_jersey,
+                'is_profiled': espn_profiled,
+                'is_healthy': espn_healthy
             }
             
             analysis_entries.append({

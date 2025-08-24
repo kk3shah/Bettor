@@ -20,17 +20,9 @@ class ManualCSVAdapter(StatsAdapter):
     def _load_data(self):
         """Load CSV data from the input directory."""
         try:
-            # Load player stats
-            player_file = self.data_dir / "sample_player_stats.csv"
-            if player_file.exists():
-                self._player_stats = pd.read_csv(player_file)
-                print(f"Loaded {len(self._player_stats)} player records")
-            
-            # Load team stats
-            team_file = self.data_dir / "sample_team_stats.csv"
-            if team_file.exists():
-                self._team_stats = pd.read_csv(team_file)
-                print(f"Loaded {len(self._team_stats)} team records")
+            # Note: Sample files removed - using real ESPN data instead
+            # This adapter is kept for potential future manual data uploads
+            print("Manual CSV adapter initialized (no sample data loaded)")
                 
         except Exception as e:
             print(f"Warning: Could not load CSV data: {e}")

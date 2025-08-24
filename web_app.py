@@ -18,11 +18,6 @@ import logging
 sys.path.append(os.path.dirname(os.path.abspath(__file__)))
 
 from app.data.adapters.live_scraper import LiveDataScraper
-from app.services.espn_analysis import analyze_espn_based_markets
-from data_manager import CSVDataManager
-# from background_scheduler import scheduler  # Disabled for Railway deployment
-
-from app.services.value import american_to_decimal
 try:
     from database import BettorDatabase
 except ImportError:
@@ -338,22 +333,22 @@ class BettorWebService:
                                         if (match_row['home_team'] == home_team and 
                                             match_row['away_team'] == away_team):
                                             # Transform data to match frontend expectations
-                                            edge = analysis_data.get('edge', 0)
+                                            final_score = analysis_data.get('final_score', 50)
                                             model_prob = analysis_data.get('model_prob', 0.5)
                                             
-                                            # FILTER: Only show bets with >1% edge (positive mathematical advantage)
-                                            if edge <= 0.01:
-                                                continue  # Skip this bet
+                                            # FILTER: Only show bets with Final Score > 60 (good opportunities)
+                                            if final_score < 60:
+                                                continue  # Skip low-quality bets
                                             
                                             # FILTER: Remove bets where player has 0 average per game for this metric
                                             rate_per_game = analysis_data.get('rate_per_game', 0)
                                             if rate_per_game <= 0:
                                                 continue  # Skip players with 0 average for this metric
                                             
-                                            # Calculate confidence based on edge AND model probability
-                                            if edge > 0.05 and model_prob > 0.3:
+                                            # Calculate confidence based on Final Score
+                                            if final_score >= 80:
                                                 confidence = 'High'
-                                            elif edge > 0.02 or model_prob > 0.25:
+                                            elif final_score >= 70:
                                                 confidence = 'Medium'
                                             else:
                                                 confidence = 'Low'
@@ -378,12 +373,8 @@ class BettorWebService:
                                                 'threshold': analysis_data['threshold'],
                                                 'model_prob': model_prob,
                                                 'model_probability_percent': round(model_prob * 100, 1),
-                                                'implied_prob': analysis_data.get('implied_prob', 0.5),
-                                                'edge': round(edge, 4),  # Ensure edge is properly formatted
-                                                'edge_percent': round(edge * 100, 2),  # Edge as percentage for display
-                                                'odds': analysis_data.get('odds', '2.00'),
-                                                'odds_american': analysis_data.get('odds', '2.00'),
-                                                'kelly': analysis_data.get('kelly', 0.05),
+                                                'final_score': round(final_score, 1),
+                                                'final_score_percent': round(final_score, 1),  # For display consistency
                                                 'suggested_stake': analysis_data.get('suggested_stake', 10.0),
                                                 'confidence': confidence,
                                                 'fair_odds_decimal': round(fair_odds_decimal, 2),
@@ -392,7 +383,7 @@ class BettorWebService:
                                                 'apps_this_season': analysis_data.get('games_played', 'N/A'),  # Fix Apps field
                                                 'position': analysis_data.get('position', ''),
                                                 'avg_per_game': round(rate_per_game, 2),  # Add average per game metric
-                                                'reasoning': f"Fair odds: {round(fair_odds_decimal, 2)} | Model: {round(model_prob * 100, 1)}% | Edge: {round(edge * 100, 2)}% | Avg: {round(rate_per_game, 2)}/game"
+                                                'reasoning': f"Final Score: {round(final_score, 1)} | Model: {round(model_prob * 100, 1)}% | Avg: {round(rate_per_game, 2)}/game"
                                             })
                                         break
                         
@@ -411,11 +402,11 @@ class BettorWebService:
                 if player not in player_best_bets or model_prob > player_best_bets[player].get('model_prob', 0):
                     player_best_bets[player] = bet
             
-            # Convert back to list and sort by edge (highest to lowest)
+            # Convert back to list and sort by Final Score (highest to lowest)
             matching_analysis = list(player_best_bets.values())
-            matching_analysis.sort(key=lambda x: x.get('edge', 0), reverse=True)
+            matching_analysis.sort(key=lambda x: x.get('final_score', 0), reverse=True)
             
-            print(f"✅ Found {len(matching_analysis)} unique players with best opportunities (sorted by edge)")
+            print(f"✅ Found {len(matching_analysis)} unique players with best opportunities (sorted by Final Score)")
             
             # Format results for web display
             analysis_results = {
@@ -523,12 +514,76 @@ def match_analysis(home_team, away_team):
 
 @app.route('/api/stats')
 def get_stats():
-    """API endpoint to get database statistics."""
+    """API endpoint to get dynamic database statistics."""
     try:
-        if not bettor_service.db:
-            return jsonify({"message": "Database not available", "stats": {}})
-        stats = bettor_service.db.get_database_stats()
-        return jsonify(stats)
+        from simple_ml_model import ml_model
+        import csv
+        import json
+        from pathlib import Path
+        
+        # Get analysis data from CSV
+        analysis_file = Path("data/analysis.csv")
+        analyses = []
+        
+        if analysis_file.exists():
+            with open(analysis_file, 'r', encoding='utf-8') as f:
+                reader = csv.DictReader(f)
+                for row in reader:
+                    try:
+                        analysis_data = json.loads(row['analysis_data'])
+                        analyses.append(analysis_data)
+                    except:
+                        continue
+        
+        # Calculate real statistics
+        total_analyses = len(analyses)
+        
+        # Calculate confidence distribution based on Final Score
+        confidence_counts = {'High': 0, 'Medium': 0, 'Low': 0}
+        final_scores = []
+        
+        for analysis in analyses:
+            final_score = analysis.get('final_score', 50)
+            final_scores.append(final_score)
+            
+            # Determine confidence based on Final Score
+            if final_score >= 80:
+                confidence_counts['High'] += 1
+            elif final_score >= 70:
+                confidence_counts['Medium'] += 1
+            else:
+                confidence_counts['Low'] += 1
+        
+        # Calculate average Final Score
+        avg_final_score = sum(final_scores) / len(final_scores) if final_scores else 50
+        
+        # Get ML model insights
+        ml_insights = ml_model.get_model_insights()
+        
+        # Count unique players
+        unique_players = len(set(analysis.get('player', '') for analysis in analyses))
+        
+        # Count matches analyzed today
+        matches_file = Path("data/matches.csv")
+        matches_analyzed = 0
+        if matches_file.exists():
+            with open(matches_file, 'r', encoding='utf-8') as f:
+                matches_analyzed = len(f.readlines()) - 1  # Subtract header
+        
+        return jsonify({
+            'total_opportunities': total_analyses,
+            'high_confidence_bets': confidence_counts.get('High', 0),
+            'medium_confidence_bets': confidence_counts.get('Medium', 0), 
+            'low_confidence_bets': confidence_counts.get('Low', 0),
+            'average_final_score': round(avg_final_score, 1),
+            'unique_players_analyzed': unique_players,
+            'matches_analyzed_today': matches_analyzed,
+            'ml_model_accuracy': ml_insights.get('accuracy', 0),
+            'ml_predictions_made': ml_insights.get('predictions_made', 0),
+            'data_freshness': 'Real-time ESPN data',
+            'last_updated': datetime.now().isoformat()
+        })
+        
     except Exception as e:
         return jsonify({"error": str(e)}), 500
 

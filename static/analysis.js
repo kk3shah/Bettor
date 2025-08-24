@@ -248,8 +248,8 @@ class BettorAnalysis {
                         <div class="detail-label">Fair Odds</div>
                     </div>
                     <div class="bet-detail">
-                        <div class="detail-value" style="color: ${bet.edge >= 0 ? 'var(--success-color)' : 'var(--error-color)'}">${bet.edge ? (bet.edge * 100).toFixed(1) + '%' : 'N/A'}</div>
-                        <div class="detail-label">Edge</div>
+                        <div class="detail-value" style="color: ${bet.final_score >= 70 ? 'var(--success-color)' : bet.final_score >= 60 ? 'var(--warning-color)' : 'var(--error-color)'}">${bet.final_score || 'N/A'}</div>
+                        <div class="detail-label">Final Score</div>
                     </div>
                     <div class="bet-detail">
                         <div class="detail-value">${bet.apps_this_season || 'N/A'}</div>
@@ -445,24 +445,30 @@ window.BettorUtils = window.BettorUtils || {
 // Dynamic profit calculation
 function updateProfit(input, modelProbability) {
     const userOdds = parseFloat(input.value);
-    const fairOdds = 100 / modelProbability; // Convert percentage to decimal odds
+    const profitDisplay = input.parentElement.querySelector('.profit-value');
+    const profitLabel = input.parentElement.querySelector('.profit-label');
     
-    if (userOdds >= fairOdds) {
-        const expectedReturn = (userOdds - 1) * (modelProbability / 100);
-        const roi = ((expectedReturn - 1) * 100).toFixed(1);
+    if (userOdds && userOdds > 1) {
+        const stake = 10; // $10 stake
+        const modelProbDecimal = modelProbability / 100; // Convert percentage to decimal
         
-        const profitDisplay = input.parentElement.querySelector('.profit-value');
-        const profitLabel = input.parentElement.querySelector('.profit-label');
+        // Calculate expected return on $10 stake
+        const potentialWin = stake * (userOdds - 1); // Profit if bet wins
+        const expectedReturn = (modelProbDecimal * potentialWin) - ((1 - modelProbDecimal) * stake);
         
-        if (roi > 0) {
-            profitDisplay.textContent = `+${roi}%`;
+        if (expectedReturn > 0) {
+            profitDisplay.textContent = `+$${expectedReturn.toFixed(2)}`;
             profitDisplay.style.color = 'var(--success-color)';
-            profitLabel.textContent = 'Expected ROI';
+            profitLabel.textContent = 'Expected Return ($10 stake)';
         } else {
-            profitDisplay.textContent = `${roi}%`;
+            profitDisplay.textContent = `-$${Math.abs(expectedReturn).toFixed(2)}`;
             profitDisplay.style.color = 'var(--error-color)';
-            profitLabel.textContent = 'Expected Loss';
+            profitLabel.textContent = 'Expected Loss ($10 stake)';
         }
+        
+        profitDisplay.style.display = 'block';
+    } else {
+        profitDisplay.style.display = 'none';
     }
 }
 
