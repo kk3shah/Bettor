@@ -763,6 +763,46 @@ def get_matches():
     
     return jsonify(formatted_matches)
 
+@app.route('/api/debug-files')
+def debug_files():
+    """Debug endpoint to check what files exist on Railway"""
+    import os
+    try:
+        files = {}
+        data_dir = 'data'
+        if os.path.exists(data_dir):
+            files['data_dir_exists'] = True
+            files['data_files'] = os.listdir(data_dir)
+            
+            # Check analysis.csv specifically
+            analysis_path = os.path.join(data_dir, 'analysis.csv')
+            if os.path.exists(analysis_path):
+                files['analysis_csv_exists'] = True
+                files['analysis_csv_size'] = os.path.getsize(analysis_path)
+                
+                # Read first few lines
+                with open(analysis_path, 'r', encoding='utf-8') as f:
+                    lines = f.readlines()[:3]
+                    files['analysis_csv_preview'] = [line.strip() for line in lines]
+            else:
+                files['analysis_csv_exists'] = False
+                
+            # Check matches.csv
+            matches_path = os.path.join(data_dir, 'matches.csv')
+            if os.path.exists(matches_path):
+                files['matches_csv_exists'] = True
+                with open(matches_path, 'r', encoding='utf-8') as f:
+                    lines = f.readlines()[:5]
+                    files['matches_csv_preview'] = [line.strip() for line in lines]
+            else:
+                files['matches_csv_exists'] = False
+        else:
+            files['data_dir_exists'] = False
+            
+        return jsonify(files)
+    except Exception as e:
+        return jsonify({"error": str(e)})
+
 @app.route('/api/analyze')
 def analyze_match():
     """API endpoint to analyze selected match."""
