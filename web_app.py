@@ -532,9 +532,7 @@ class BettorWebService:
                             with open(matches_file, 'r', encoding='utf-8') as mf:
                                 match_reader = csv.DictReader(mf)
                                 for match_row in match_reader:
-                                    print(f"🔍 Checking match_id {match_row['match_id']} vs {match_id}: {match_row['home_team']} vs {match_row['away_team']}")
                                     if match_row['match_id'] == match_id:
-                                        print(f"✅ Match ID found! Comparing teams: '{match_row['home_team']}' == '{home_team}' and '{match_row['away_team']}' == '{away_team}'")
                                         if (match_row['home_team'] == home_team and 
                                             match_row['away_team'] == away_team):
                                             # Transform data to match frontend expectations
@@ -915,50 +913,9 @@ def analyze_match():
     """API endpoint to analyze selected match."""
     home_team = request.args.get('home_team')
     away_team = request.args.get('away_team')
-    debug = request.args.get('debug', False)
     
     if not home_team or not away_team:
         return jsonify({"error": "Missing team parameters"}), 400
-    
-    if debug:
-        # Debug mode - return detailed info about what's happening
-        try:
-            current_matches = bettor_service.get_upcoming_matches(24)
-            espn_matches = [f"{m.get('home_team')} vs {m.get('away_team')}" for m in current_matches]
-            
-            # Check if analysis.csv exists and what's in it
-            import csv, json
-            from pathlib import Path
-            
-            analysis_file = Path("data/analysis.csv")
-            matches_file = Path("data/matches.csv")
-            
-            debug_info = {
-                "requested_match": f"{home_team} vs {away_team}",
-                "espn_matches_available": espn_matches,
-                "analysis_csv_exists": analysis_file.exists(),
-                "matches_csv_exists": matches_file.exists()
-            }
-            
-            if matches_file.exists():
-                with open(matches_file, 'r', encoding='utf-8') as f:
-                    reader = csv.DictReader(f)
-                    csv_matches = []
-                    for row in reader:
-                        csv_matches.append(f"ID {row['match_id']}: {row['home_team']} vs {row['away_team']}")
-                    debug_info["csv_matches"] = csv_matches
-            
-            if analysis_file.exists():
-                with open(analysis_file, 'r', encoding='utf-8') as f:
-                    reader = csv.DictReader(f)
-                    analysis_match_ids = []
-                    for row in reader:
-                        analysis_match_ids.append(row['match_id'])
-                    debug_info["analysis_match_ids"] = list(set(analysis_match_ids))
-            
-            return jsonify(debug_info)
-        except Exception as e:
-            return jsonify({"debug_error": str(e)})
     
     analysis = bettor_service.run_match_analysis(home_team, away_team)
     return jsonify(analysis)
