@@ -107,27 +107,138 @@ class BettorWebService:
             return "Unknown", "Unknown"
     
     def get_upcoming_matches(self, hours_ahead=24):
-        """Get upcoming matches - CSV FIRST (instant), then generate if needed."""
-        print(f"🌍 Getting matches for next {hours_ahead} hours...")
+        """Get upcoming matches - REAL ESPN API DATA ONLY."""
+        print(f"🌍 Getting REAL matches for next {hours_ahead} hours from ESPN API...")
         
-        # PRIORITY 1: Check CSV cache first (INSTANT - no API calls)
+        # ONLY USE REAL ESPN API DATA - NO FAKE DATA EVER
         try:
-            matches_file = Path("data/matches.csv")
-            if matches_file.exists():
-                with open(matches_file, 'r', encoding='utf-8') as f:
-                    reader = csv.DictReader(f)
-                    cached_matches = list(reader)
-                    if cached_matches:
-                        print(f"⚡ Found {len(cached_matches)} cached matches (NO API CALLS)")
-                        return cached_matches
+            from datetime import datetime, timezone, timedelta
+            import requests
+            
+            now = datetime.now(timezone.utc)
+            today = now.date()
+            
+            # Get real Premier League matches from ESPN API
+            leagues = {'Premier League': 'eng.1'}
+            all_matches = []
+            
+            for league_name, league_id in leagues.items():
+                try:
+                    # Try current date and also check without date filter to get all current matches
+                    date_str = today.strftime('%Y%m%d')
+                    url = f"https://site.api.espn.com/apis/site/v2/sports/soccer/{league_id}/scoreboard"
+                    # Remove date filter to get all current matches
+                    params = {}
+                    
+                    print(f"🔍 Fetching REAL {league_name} matches from ESPN...")
+                    response = requests.get(url, params=params, timeout=10)
+                    
+                    if response.status_code == 200:
+                        data = response.json()
+                        events = data.get('events', [])
+                        
+                        for event in events:
+                            try:
+                                # Parse match time
+                                match_time_str = event.get('date', '')
+                                if not match_time_str:
+                                    continue
+                                
+                                # Parse ISO datetime with timezone
+                                if match_time_str.endswith('Z'):
+                                    match_time_str = match_time_str[:-1] + '+00:00'
+                                match_time = datetime.fromisoformat(match_time_str)
+                                
+                                # Ensure timezone aware
+                                if match_time.tzinfo is None:
+                                    match_time = match_time.replace(tzinfo=timezone.utc)
+                                
+                                # Check if within time window (future matches OR currently live)
+                                time_diff = match_time - now
+                                is_future = 0 < time_diff.total_seconds() <= hours_ahead * 3600
+                                is_live = -7200 <= time_diff.total_seconds() <= 0  # Live matches (up to 2 hours ago)
+                                
+                                if is_future or is_live:
+                                    
+                                    competitions = event.get('competitions', [])
+                                    for comp in competitions:
+                                        competitors = comp.get('competitors', [])
+                                        
+                                        if len(competitors) >= 2:
+                                            home_team = competitors[0].get('team', {}).get('displayName', 'Unknown')
+                                            away_team = competitors[1].get('team', {}).get('displayName', 'Unknown')
+                                            
+                                            # Only include teams we have ESPN coverage for
+                                            espn_coverage_file = Path("data/espn_coverage.json")
+                                            if espn_coverage_file.exists():
+                                                with open(espn_coverage_file, 'r') as f:
+                                                    coverage = json.load(f)
+                                                    supported_teams = [team['name'] for team in coverage.get('covered_teams', [])]
+                                                    
+                                                    print(f"🔍 Checking: {home_team} vs {away_team}")
+                                                    print(f"📋 Home team '{home_team}' in coverage: {home_team in supported_teams}")
+                                                    print(f"📋 Away team '{away_team}' in coverage: {away_team in supported_teams}")
+                                                    
+                                                    if home_team not in supported_teams or away_team not in supported_teams:
+                                                        print(f"⚠️ Skipping {home_team} vs {away_team} - not in ESPN coverage")
+                                                        print(f"📋 Supported teams sample: {supported_teams[:10]}")
+                                                        continue
+                                            
+                                            status = comp.get('status', {}).get('type', {}).get('description', 'Scheduled')
+                                            
+                                            # Calculate time until match or live status
+                                            if is_live:
+                                                # Match is currently live
+                                                match_status = comp.get('status', {}).get('type', {}).get('description', 'Live')
+                                                if 'HALF' in match_status or 'Live' in match_status:
+                                                    clock = comp.get('status', {}).get('displayClock', 'Live')
+                                                    time_until = f"LIVE - {clock}"
+                                                else:
+                                                    time_until = "LIVE"
+                                            else:
+                                                # Future match
+                                                hours_until = time_diff.total_seconds() / 3600
+                                                if hours_until < 1:
+                                                    time_until = f"in {int(time_diff.total_seconds() / 60)}m"
+                                                else:
+                                                    hours = int(hours_until)
+                                                    minutes = int((time_diff.total_seconds() % 3600) / 60)
+                                                    if minutes > 0:
+                                                        time_until = f"in {hours}h {minutes}m"
+                                                    else:
+                                                        time_until = f"in {hours}h"
+                                            
+                                            all_matches.append({
+                                                'id': event.get('id', f"{home_team}-{away_team}"),
+                                                'home_team': home_team,
+                                                'away_team': away_team,
+                                                'league': league_name,
+                                                'kickoff': match_time.strftime('%H:%M'),
+                                                'kickoff_time': match_time.isoformat(),
+                                                'status': status,
+                                                'time_until': time_until,
+                                                'venue': f"{home_team} Stadium"
+                                            })
+                                            
+                                            print(f"✅ REAL MATCH: {home_team} vs {away_team} at {match_time.strftime('%H:%M')} ({time_until})")
+                            
+                            except Exception as e:
+                                print(f"⚠️ Error parsing match: {e}")
+                                continue
+                    
+                    else:
+                        print(f"⚠️ ESPN API error for {league_name}: {response.status_code}")
+                
+                except Exception as e:
+                    print(f"⚠️ Error fetching {league_name}: {e}")
+                    continue
+            
+            print(f"✅ Found {len(all_matches)} REAL matches from ESPN API")
+            return all_matches
+            
         except Exception as e:
-            print(f"⚠️ Error reading matches CSV: {e}")
-        
-        # PRIORITY 2: Return empty if no CSV - only show Premier League matches we can analyze
-        print("📊 CSV empty - no matches available (Premier League only)")
-        print("💡 Run: python populate_real_premier_league_matches.py to get real matches")
-        
-        return []
+            print(f"❌ Error getting real matches: {e}")
+            return []
     
     def get_real_data_matches(self):
         """Get matches that have real scraped data available."""
@@ -627,18 +738,25 @@ def get_matches():
             # Format time for user's timezone
             time_until, local_kickoff = bettor_service.format_time_for_user(kickoff_dt, user_timezone)
             
-            # Only include future matches
+            # Include both future matches AND live matches
             now_utc = datetime.now(pytz.UTC)
-            if kickoff_dt > now_utc:
+            time_diff_seconds = (kickoff_dt - now_utc).total_seconds()
+            is_future = time_diff_seconds > 0
+            is_live = -7200 <= time_diff_seconds <= 0  # Live matches (up to 2 hours ago)
+            
+            if is_future or is_live:
+                # Use time_until from the match data if available (for live matches)
+                display_time_until = match.get('time_until', time_until)
+                
                 formatted_match = {
-                    'id': match['match_id'],
+                    'id': match.get('id', match.get('match_id', 'unknown')),
                     'home_team': match['home_team'],
                     'away_team': match['away_team'],
                     'league': match['league'],
                     'kickoff': local_kickoff,  # Local time for user
                     'kickoff_time': match['kickoff_time'],
-                    'time_until': time_until,  # Properly calculated time until
-                    'venue': f"{match['home_team']} Stadium"
+                    'time_until': display_time_until,  # Use live status or calculated time
+                    'venue': match.get('venue', f"{match['home_team']} Stadium")
                 }
                 formatted_matches.append(formatted_match)
         except Exception as e:

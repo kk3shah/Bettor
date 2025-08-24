@@ -498,9 +498,10 @@ body {
   border-radius: var(--radius-xl);
   box-shadow: var(--shadow-md);
   border: 1px solid var(--primary-200);
-  overflow: hidden;
+  overflow: visible; /* Changed from hidden to visible to prevent cut-off */
   transition: all var(--transition-normal);
   position: relative;
+  margin-bottom: var(--space-6); /* Add margin to prevent overlap */
 }
 
 .bet-card::before {
@@ -615,11 +616,17 @@ body {
 
 /* ===== PROFESSIONAL ODDS INPUT ===== */
 .profitable-section {
-  background: linear-gradient(135deg, var(--primary-900) 0%, var(--primary-800) 100%);
-  color: white;
-  padding: var(--space-6);
-  margin-top: var(--space-4);
-  border-radius: 0 0 var(--radius-xl) var(--radius-xl);
+    background: linear-gradient(135deg, var(--primary-900) 0%, var(--primary-800) 100%);
+    color: white;
+    padding: var(--space-6);
+    margin-top: var(--space-4);
+    border-radius: 0 0 var(--radius-xl) var(--radius-xl);
+    width: 100%;
+    box-sizing: border-box;
+    min-height: 120px; /* Ensure minimum height for calculator */
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
 }
 
 .profitable-title {
@@ -636,6 +643,8 @@ body {
   align-items: center;
   gap: var(--space-4);
   flex-wrap: wrap;
+  min-height: 60px; /* Ensure minimum height */
+  width: 100%;
 }
 
 .odds-input-group {
@@ -785,10 +794,18 @@ body {
   .odds-calculator {
     flex-direction: column;
     align-items: stretch;
+    gap: var(--space-3);
+    min-height: 80px; /* Larger minimum height on mobile */
   }
 
   .odds-input-group {
     justify-content: space-between;
+    flex: 1;
+  }
+  
+  .profit-display {
+    flex: 1;
+    justify-content: center;
   }
 }
 
