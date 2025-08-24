@@ -47,7 +47,6 @@ class BettorWebService:
     
     def __init__(self):
         self.scraper = LiveDataScraper()
-        self.csv_manager = CSVDataManager()
         self.db = BettorDatabase() if BettorDatabase else None
     
     def get_upcoming_matches(self, hours_ahead=24):
@@ -55,19 +54,23 @@ class BettorWebService:
         print(f"🌍 Getting matches for next {hours_ahead} hours...")
         
         # PRIORITY 1: Check CSV cache first (INSTANT - no API calls)
-        cached_matches = self.csv_manager.get_matches()
-        if cached_matches:
-            print(f"⚡ Found {len(cached_matches)} cached matches (NO API CALLS)")
-            return cached_matches
+        try:
+            matches_file = Path("data/matches.csv")
+            if matches_file.exists():
+                with open(matches_file, 'r', encoding='utf-8') as f:
+                    reader = csv.DictReader(f)
+                    cached_matches = list(reader)
+                    if cached_matches:
+                        print(f"⚡ Found {len(cached_matches)} cached matches (NO API CALLS)")
+                        return cached_matches
+        except Exception as e:
+            print(f"⚠️ Error reading matches CSV: {e}")
         
         # PRIORITY 2: Generate and cache matches if CSV empty
         print("📊 CSV empty - generating matches and caching...")
         generated_matches = self.get_simulation_matches(hours_ahead)
         
-        # Cache the matches for next time
-        if generated_matches:
-            self.csv_manager.store_matches(generated_matches)
-            print(f"💾 Cached {len(generated_matches)} matches to CSV")
+        print(f"💾 Matches will be cached by populate_real_premier_league_matches.py")
         
         return generated_matches
     
