@@ -10,9 +10,8 @@ from datetime import datetime
 from app.data.adapters.live_scraper import LiveDataScraper
 import time
 
-def get_realistic_player_stats():
-    """Generate realistic player statistics based on position and experience."""
-    positions = ['Defender', 'Midfielder', 'Forward', 'Goalkeeper']
+def get_realistic_player_stats_for_position(position):
+    """Generate realistic player statistics for a specific position."""
     
     # Base stats by position
     position_stats = {
@@ -58,8 +57,7 @@ def get_realistic_player_stats():
         }
     }
     
-    position = random.choice(positions)
-    stats = position_stats[position].copy()
+    stats = position_stats.get(position, position_stats['Midfielder']).copy()
     
     # Add some variance
     for key in stats:
@@ -125,15 +123,9 @@ def get_real_players_from_espn(scraper, team_name):
             print(f"❌ No real ESPN data for {team_name}")
             return []
         
-        # Extract player names from ESPN roster
-        player_names = []
-        for player in roster:
-            name = player.get('player_name', '').strip()  # ESPN uses 'player_name' not 'name'
-            if name:
-                player_names.append(name)
-        
-        print(f"✅ Got {len(player_names)} real players from ESPN")
-        return player_names
+        # Return full player objects with position data
+        print(f"✅ Got {len(roster)} real players from ESPN")
+        return roster
         
     except Exception as e:
         print(f"❌ Error getting ESPN data for {team_name}: {e}")
@@ -158,11 +150,24 @@ def generate_analysis_for_match_real_espn(scraper, match_id, home_team, away_tea
     analysis_entries = []
     
     for player in all_players:
-        # Get realistic stats for this player
-        player_stats = get_realistic_player_stats()
+        # Use REAL ESPN position data instead of random generation
+        real_position = player.get('position', 'M')  # Default to Midfielder if missing
         
-        # Define props based on position
-        if player_stats['position'] == 'Goalkeeper':
+        # Map ESPN position abbreviations to full names
+        position_mapping = {
+            'GK': 'Goalkeeper', 'G': 'Goalkeeper',
+            'RB': 'Defender', 'LB': 'Defender', 'CB': 'Defender', 'D': 'Defender',
+            'CDM': 'Midfielder', 'CM': 'Midfielder', 'CAM': 'Midfielder', 'M': 'Midfielder',
+            'RW': 'Forward', 'LW': 'Forward', 'ST': 'Forward', 'F': 'Forward'
+        }
+        
+        full_position = position_mapping.get(real_position, 'Midfielder')
+        
+        # Get realistic stats for this player with REAL position
+        player_stats = get_realistic_player_stats_for_position(full_position)
+        
+        # Define props based on REAL position
+        if full_position == 'Goalkeeper':
             # Goalkeeper-specific props
             all_props = [
                 ('Player Yellow Cards', player_stats['yellow_cards_per_game']),
@@ -206,7 +211,7 @@ def generate_analysis_for_match_real_espn(scraper, match_id, home_team, away_tea
             suggested_stake = base_stake * (1 + kelly * 2)
             
             analysis_data = {
-                'player': player,  # REAL ESPN player name
+                'player': player.get('player_name', 'Unknown'),  # REAL ESPN player name
                 'prop': prop_name,
                 'threshold': str(threshold),
                 'model_prob': round(model_prob, 4),

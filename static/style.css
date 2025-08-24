@@ -1024,3 +1024,45 @@ body {
     --border-light: #475569;
   }
 }
+
+/* Odds input styling */
+.odds-input-container {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-md);
+  margin-top: var(--spacing-sm);
+}
+
+.odds-input {
+  background: var(--bg-secondary);
+  border: 1px solid var(--border-color);
+  border-radius: var(--border-radius);
+  padding: var(--spacing-sm);
+  color: var(--text-primary);
+  font-size: var(--font-size-sm);
+  width: 80px;
+  text-align: center;
+}
+
+.odds-input:focus {
+  outline: none;
+  border-color: var(--accent-color);
+  box-shadow: 0 0 0 2px rgba(255, 165, 0, 0.2);
+}
+
+.profit-display {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.profit-value {
+  font-weight: 600;
+  font-size: var(--font-size-sm);
+}
+
+.profit-label {
+  font-size: var(--font-size-xs);
+  color: var(--text-muted);
+  margin-top: 2px;
+}

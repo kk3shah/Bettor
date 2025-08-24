@@ -263,14 +263,15 @@ class BettorAnalysis {
                 
                 <div class="bet-threshold">
                     <div class="threshold-info">
-                        <div class="threshold-label">💰 Bet if your bookmaker offers:</div>
-                        <div class="threshold-value">${bet.min_profitable_odds_american} or better</div>
-                        <div class="threshold-decimal">(${bet.min_profitable_odds_decimal} decimal)</div>
+                        <div class="threshold-label">💰 Profitable if odds ≥</div>
+                        <div class="odds-input-container">
+                            <input type="number" class="odds-input" value="${bet.min_profitable_odds_decimal}" step="0.01" min="1.01" onchange="updateProfit(this, ${bet.model_probability_percent})">
+                            <div class="profit-display">
+                                <span class="profit-value">+15%</span>
+                                <span class="profit-label">Expected ROI</span>
+                            </div>
+                        </div>
                     </div>
-                </div>
-                
-                <div class="bet-reasoning">
-                    <small>${bet.reasoning || 'Based on statistical analysis'}</small>
                 </div>
             `;
         } else {
@@ -440,5 +441,29 @@ window.BettorUtils = window.BettorUtils || {
         requestAnimationFrame(step);
     }
 };
+
+// Dynamic profit calculation
+function updateProfit(input, modelProbability) {
+    const userOdds = parseFloat(input.value);
+    const fairOdds = 100 / modelProbability; // Convert percentage to decimal odds
+    
+    if (userOdds >= fairOdds) {
+        const expectedReturn = (userOdds - 1) * (modelProbability / 100);
+        const roi = ((expectedReturn - 1) * 100).toFixed(1);
+        
+        const profitDisplay = input.parentElement.querySelector('.profit-value');
+        const profitLabel = input.parentElement.querySelector('.profit-label');
+        
+        if (roi > 0) {
+            profitDisplay.textContent = `+${roi}%`;
+            profitDisplay.style.color = 'var(--success-color)';
+            profitLabel.textContent = 'Expected ROI';
+        } else {
+            profitDisplay.textContent = `${roi}%`;
+            profitDisplay.style.color = 'var(--error-color)';
+            profitLabel.textContent = 'Expected Loss';
+        }
+    }
+}
 
 console.log('📊 Analysis JavaScript loaded');
