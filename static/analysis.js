@@ -255,6 +255,10 @@ class BettorAnalysis {
                         <div class="detail-value">${bet.apps_this_season || 'N/A'}</div>
                         <div class="detail-label">Apps</div>
                     </div>
+                    <div class="bet-detail">
+                        <div class="detail-value">${bet.avg_per_game || 'N/A'}</div>
+                        <div class="detail-label">Avg/Game</div>
+                    </div>
                 </div>
                 
                 <div class="bet-threshold">

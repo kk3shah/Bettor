@@ -8,6 +8,11 @@ import os
 from datetime import datetime, timedelta
 import json
 import sqlite3
+import threading
+import schedule
+import time
+import subprocess
+import logging
 
 # Add project root to path
 sys.path.append(os.path.dirname(os.path.abspath(__file__)))
@@ -340,6 +345,11 @@ class BettorWebService:
                                             if edge <= 0.01:
                                                 continue  # Skip this bet
                                             
+                                            # FILTER: Remove bets where player has 0 average per game for this metric
+                                            rate_per_game = analysis_data.get('rate_per_game', 0)
+                                            if rate_per_game <= 0:
+                                                continue  # Skip players with 0 average for this metric
+                                            
                                             # Calculate confidence based on edge AND model probability
                                             if edge > 0.05 and model_prob > 0.3:
                                                 confidence = 'High'
@@ -381,7 +391,8 @@ class BettorWebService:
                                                 'min_profitable_odds_american': min_profitable_american,
                                                 'apps_this_season': analysis_data.get('games_played', 'N/A'),  # Fix Apps field
                                                 'position': analysis_data.get('position', ''),
-                                                'reasoning': f"Fair odds: {round(fair_odds_decimal, 2)} | Model: {round(model_prob * 100, 1)}% | Edge: {round(edge * 100, 2)}%"
+                                                'avg_per_game': round(rate_per_game, 2),  # Add average per game metric
+                                                'reasoning': f"Fair odds: {round(fair_odds_decimal, 2)} | Model: {round(model_prob * 100, 1)}% | Edge: {round(edge * 100, 2)}% | Avg: {round(rate_per_game, 2)}/game"
                                             })
                                         break
                         
@@ -554,6 +565,103 @@ def health_check():
     """Ultra-simple health check for Railway."""
     return 'OK', 200
 
+@app.route('/api/refresh', methods=['POST', 'GET'])
+def trigger_refresh():
+    """Manual trigger for data refresh - can be called by external cron services."""
+    try:
+        print("🔄 Manual refresh triggered via API...")
+        success = run_daily_refresh()
+        
+        if success:
+            return jsonify({
+                "status": "success",
+                "message": "Data refresh completed successfully",
+                "timestamp": datetime.now().isoformat()
+            }), 200
+        else:
+            return jsonify({
+                "status": "error", 
+                "message": "Data refresh failed",
+                "timestamp": datetime.now().isoformat()
+            }), 500
+            
+    except Exception as e:
+        return jsonify({
+            "status": "error",
+            "message": f"Refresh error: {str(e)}",
+            "timestamp": datetime.now().isoformat()
+        }), 500
+
+# ============================================================================
+# SCHEDULER FUNCTIONS
+# ============================================================================
+
+def run_daily_refresh():
+    """Run the daily data refresh - fetch new matches and generate analysis."""
+    try:
+        print("🌙 Starting daily refresh...")
+        
+        # Step 1: Get new Premier League matches for next 24 hours
+        print("📅 Fetching upcoming Premier League matches...")
+        result = subprocess.run([sys.executable, 'populate_real_premier_league_matches.py'], 
+                              capture_output=True, text=True, timeout=300)
+        
+        if result.returncode == 0:
+            print("✅ Successfully updated matches.csv")
+        else:
+            print(f"❌ Error updating matches: {result.stderr}")
+            return False
+        
+        # Step 2: Generate fresh analysis with real ESPN rosters
+        print("🧠 Generating fresh betting analysis...")
+        result = subprocess.run([sys.executable, 'use_real_espn_rosters.py'], 
+                              capture_output=True, text=True, timeout=600)
+        
+        if result.returncode == 0:
+            print("✅ Successfully generated fresh analysis")
+            print(f"📊 Daily refresh completed at {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}")
+            return True
+        else:
+            print(f"❌ Error generating analysis: {result.stderr}")
+            return False
+            
+    except subprocess.TimeoutExpired:
+        print("⏰ Daily refresh timed out")
+        return False
+    except Exception as e:
+        print(f"💥 Unexpected error in daily refresh: {e}")
+        return False
+
+def run_scheduler():
+    """Background scheduler thread."""
+    print("⏰ Starting background scheduler...")
+    
+    # Schedule daily refresh at midnight UTC
+    schedule.every().day.at("00:00").do(run_daily_refresh)
+    
+    # Schedule quick updates every 4 hours
+    schedule.every(4).hours.do(run_daily_refresh)
+    
+    # Initial run if no data exists
+    try:
+        with open('data/matches.csv', 'r') as f:
+            lines = f.readlines()
+            if len(lines) <= 1:  # Only header or empty
+                print("📊 No match data found, running initial refresh...")
+                run_daily_refresh()
+    except FileNotFoundError:
+        print("📊 matches.csv not found, running initial refresh...")
+        run_daily_refresh()
+    
+    # Keep scheduler running
+    while True:
+        try:
+            schedule.run_pending()
+            time.sleep(60)  # Check every minute
+        except Exception as e:
+            print(f"💥 Scheduler error: {e}")
+            time.sleep(300)  # Wait 5 minutes before retrying
+
 if __name__ == '__main__':
     port = int(os.environ.get('PORT', 5000))
     print("🚀 Starting Bettor Web Interface...")
@@ -561,8 +669,9 @@ if __name__ == '__main__':
     print(f"🌐 Access at: http://0.0.0.0:{port}")
     print(f"🏥 Health check: http://0.0.0.0:{port}/health")
     
-    # Background scheduler disabled for Railway deployment
-    # TODO: Add Railway cron job for daily refresh
+    # Note: Use external cron service to hit /api/refresh daily
+    # Internal scheduler removed for better reliability on cloud platforms
+    print("🔄 Manual refresh available at: /api/refresh")
     
     try:
         app.run(debug=False, host='0.0.0.0', port=port, threaded=True)
