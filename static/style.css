@@ -1066,3 +1066,35 @@ body {
   color: var(--text-muted);
   margin-top: 2px;
 }
+
+/* Team Logo Styles */
+.team-logo-small {
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  margin-right: 8px;
+  vertical-align: middle;
+  object-fit: cover;
+}
+
+.team-logo-medium {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  margin-right: 12px;
+  vertical-align: middle;
+  object-fit: cover;
+}
+
+/* Team Prop Styling */
+.bet-card.team-prop {
+  border-left: 4px solid var(--accent-color);
+}
+
+.bet-card.team-prop .bet-header {
+  background: linear-gradient(135deg, rgba(255, 193, 7, 0.1), rgba(255, 193, 7, 0.05));
+}
+
+.bet-card.player-prop {
+  border-left: 4px solid var(--primary-color);
+}

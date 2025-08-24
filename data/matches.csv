@@ -1,8 +1,4 @@
 match_id,home_team,away_team,league,kickoff_time,stored_at
-1,AFC Bournemouth,Wolverhampton Wanderers,Premier League,2025-08-23T15:51:20,2025-08-23T13:51:20.144276
-2,Brentford,Aston Villa,Premier League,2025-08-23T18:51:20,2025-08-23T13:51:20.144276
-3,Burnley,Sunderland,Premier League,2025-08-23T21:51:20,2025-08-23T13:51:20.144276
-4,Arsenal,Leeds United,Premier League,2025-08-24T00:51:20,2025-08-23T13:51:20.144276
-5,Crystal Palace,Nottingham Forest,Premier League,2025-08-24T03:51:20,2025-08-23T13:51:20.144276
-6,Everton,Brighton & Hove Albion,Premier League,2025-08-24T06:51:20,2025-08-23T13:51:20.144276
-7,Fulham,Manchester United,Premier League,2025-08-24T09:51:20,2025-08-23T13:51:20.144276
+1,Crystal Palace,Nottingham Forest,Premier League,2025-08-24T13:00:00,2025-08-24T09:03:14.829499
+2,Everton,Brighton & Hove Albion,Premier League,2025-08-24T13:00:00,2025-08-24T09:03:14.829698
+3,Fulham,Manchester United,Premier League,2025-08-24T15:30:00,2025-08-24T09:03:14.829898

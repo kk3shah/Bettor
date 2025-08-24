@@ -118,6 +118,20 @@ class BettorAnalysis {
             lineupSourceElement.textContent = matchInfo.lineup_source || 'Squad-based analysis';
         }
         
+        // Update team logos
+        const homeTeamLogo = document.getElementById('homeTeamLogo');
+        const awayTeamLogo = document.getElementById('awayTeamLogo');
+        
+        if (homeTeamLogo && matchInfo.home_team_logo) {
+            homeTeamLogo.src = matchInfo.home_team_logo;
+            homeTeamLogo.style.display = 'inline-block';
+        }
+        
+        if (awayTeamLogo && matchInfo.away_team_logo) {
+            awayTeamLogo.src = matchInfo.away_team_logo;
+            awayTeamLogo.style.display = 'inline-block';
+        }
+        
         // Update match time if available
         if (matchInfo.kickoff_time) {
             try {
@@ -225,13 +239,21 @@ class BettorAnalysis {
         const position = bet.position || '';
         const team = bet.team || '';
         const market = bet.bet_description || bet.market || 'Unknown Market';
+        const isTeamProp = bet.is_team_prop || false;
+        const teamLogo = bet.team_logo || '';
+        
+        // Create player/team display with logo
+        let playerDisplay = playerName;
+        if (isTeamProp && teamLogo) {
+            playerDisplay = `<img src="${teamLogo}" alt="${playerName}" class="team-logo-small"> ${playerName}`;
+        }
         
         // New format fields (profitable odds thresholds)
         if (bet.min_profitable_odds_american && bet.min_profitable_odds_decimal) {
             card.innerHTML = `
                 <div class="bet-header">
                     <div class="bet-player">
-                        <div class="player-name">${playerName}${shirtNumber ? ` (#${shirtNumber})` : ''}</div>
+                        <div class="player-name">${playerDisplay}${!isTeamProp && shirtNumber ? ` (#${shirtNumber})` : ''}</div>
                         <div class="bet-market">${market}</div>
                         <div class="bet-position">${position}${team ? ` - ${team}` : ''}</div>
                     </div>

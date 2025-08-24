@@ -13,11 +13,27 @@ import schedule
 import time
 import subprocess
 import logging
+from pathlib import Path
 
 # Add project root to path
 sys.path.append(os.path.dirname(os.path.abspath(__file__)))
 
 from app.data.adapters.live_scraper import LiveDataScraper
+
+def get_team_logo(team_name):
+    """Get team logo URL from ESPN mapping."""
+    try:
+        mapping_file = Path("data/espn_team_mapping.json")
+        if mapping_file.exists():
+            with open(mapping_file, 'r', encoding='utf-8') as f:
+                mapping = json.load(f)
+                team_data = mapping.get('by_name', {}).get(team_name)
+                if team_data:
+                    return team_data.get('logo', '')
+    except Exception as e:
+        print(f"⚠️ Error getting team logo: {e}")
+    return ''
+
 try:
     from database import BettorDatabase
 except ImportError:
@@ -340,6 +356,9 @@ class BettorWebService:
                                             if final_score < 60:
                                                 continue  # Skip low-quality bets
                                             
+                                            # Check if this is a team prop or player prop
+                                            is_team_prop = analysis_data.get('prop_type') == 'team'
+                                            
                                             # FILTER: Remove bets where player has 0 average per game for this metric
                                             rate_per_game = analysis_data.get('rate_per_game', 0)
                                             if rate_per_game <= 0:
@@ -366,25 +385,58 @@ class BettorWebService:
                                             else:
                                                 min_profitable_american = f"-{int(100 / (min_profitable_decimal - 1))}"
                                             
-                                            matching_analysis.append({
-                                                'player': analysis_data['player'],
-                                                'bet_description': f"{analysis_data['prop']} ≥ {analysis_data['threshold']}",
-                                                'market': analysis_data['prop'],
-                                                'threshold': analysis_data['threshold'],
-                                                'model_prob': model_prob,
-                                                'model_probability_percent': round(model_prob * 100, 1),
-                                                'final_score': round(final_score, 1),
-                                                'final_score_percent': round(final_score, 1),  # For display consistency
-                                                'suggested_stake': analysis_data.get('suggested_stake', 10.0),
-                                                'confidence': confidence,
-                                                'fair_odds_decimal': round(fair_odds_decimal, 2),
-                                                'min_profitable_odds_decimal': round(min_profitable_decimal, 2),
-                                                'min_profitable_odds_american': min_profitable_american,
-                                                'apps_this_season': analysis_data.get('games_played', 'N/A'),  # Fix Apps field
-                                                'position': analysis_data.get('position', ''),
-                                                'avg_per_game': round(rate_per_game, 2),  # Add average per game metric
-                                                'reasoning': f"Final Score: {round(final_score, 1)} | Model: {round(model_prob * 100, 1)}% | Avg: {round(rate_per_game, 2)}/game"
-                                            })
+                                            if is_team_prop:
+                                                # Team prop bet
+                                                team_name = analysis_data.get('team', '')
+                                                team_logo = analysis_data.get('logo', '') or get_team_logo(team_name)
+                                                
+                                                bet_obj = {
+                                                    'player': team_name,  # Use team name as "player"
+                                                    'bet_description': f"{analysis_data['prop']} ≥ {analysis_data['threshold']}",
+                                                    'market': analysis_data['prop'],
+                                                    'threshold': analysis_data['threshold'],
+                                                    'model_prob': model_prob,
+                                                    'model_probability_percent': round(model_prob * 100, 1),
+                                                    'final_score': round(final_score, 1),
+                                                    'final_score_percent': round(final_score, 1),
+                                                    'suggested_stake': analysis_data.get('suggested_stake', 10.0),
+                                                    'confidence': confidence,
+                                                    'fair_odds_decimal': round(fair_odds_decimal, 2),
+                                                    'min_profitable_odds_decimal': round(min_profitable_decimal, 2),
+                                                    'min_profitable_odds_american': min_profitable_american,
+                                                    'apps_this_season': 'Team',  # Show "Team" instead of apps
+                                                    'position': 'Team',
+                                                    'avg_per_game': round(rate_per_game, 2),
+                                                    'team_logo': team_logo,
+                                                    'is_team_prop': True,
+                                                    'reasoning': f"Final Score: {round(final_score, 1)} | Model: {round(model_prob * 100, 1)}% | Avg: {round(rate_per_game, 2)}/game"
+                                                }
+                                            else:
+                                                # Player prop bet
+                                                player_name = analysis_data.get('player', '')
+                                                
+                                                bet_obj = {
+                                                    'player': player_name,
+                                                    'bet_description': f"{analysis_data['prop']} ≥ {analysis_data['threshold']}",
+                                                    'market': analysis_data['prop'],
+                                                    'threshold': analysis_data['threshold'],
+                                                    'model_prob': model_prob,
+                                                    'model_probability_percent': round(model_prob * 100, 1),
+                                                    'final_score': round(final_score, 1),
+                                                    'final_score_percent': round(final_score, 1),
+                                                    'suggested_stake': analysis_data.get('suggested_stake', 10.0),
+                                                    'confidence': confidence,
+                                                    'fair_odds_decimal': round(fair_odds_decimal, 2),
+                                                    'min_profitable_odds_decimal': round(min_profitable_decimal, 2),
+                                                    'min_profitable_odds_american': min_profitable_american,
+                                                    'apps_this_season': analysis_data.get('games_played', 'N/A'),
+                                                    'position': analysis_data.get('position', ''),
+                                                    'avg_per_game': round(rate_per_game, 2),
+                                                    'is_team_prop': False,
+                                                    'reasoning': f"Final Score: {round(final_score, 1)} | Model: {round(model_prob * 100, 1)}% | Avg: {round(rate_per_game, 2)}/game"
+                                                }
+                                            
+                                            matching_analysis.append(bet_obj)
                                         break
                         
                     except (json.JSONDecodeError, KeyError) as e:
@@ -413,13 +465,15 @@ class BettorWebService:
                 "match_info": {
                     "home_team": home_team,
                     "away_team": away_team,
+                    "home_team_logo": get_team_logo(home_team),
+                    "away_team_logo": get_team_logo(away_team),
                     "analysis_time": "2025-08-23T13:35:00",
                     "lineup_source": "Real ESPN data"
                 },
                 "summary": {
                     "total_opportunities": len(matching_analysis),
-                    "high_confidence_bets": len([bet for bet in matching_analysis if bet.get('edge', 0) > 0.05]),
-                    "medium_confidence_bets": len([bet for bet in matching_analysis if 0 < bet.get('edge', 0) <= 0.05]),
+                    "high_confidence_bets": len([bet for bet in matching_analysis if bet.get('final_score', 0) >= 80]),
+                    "medium_confidence_bets": len([bet for bet in matching_analysis if 70 <= bet.get('final_score', 0) < 80]),
                     "data_quality": "100% Real ESPN Data",
                     "fake_data": False
                 },
