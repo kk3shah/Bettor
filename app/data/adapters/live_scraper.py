@@ -66,6 +66,184 @@ class LiveDataScraper:
             'away_team': away_team
         }
     
+    def get_confirmed_lineup(self, team_name: str, match_id: str) -> List[Dict]:
+        """Get confirmed starting XI from ESPN match summary API."""
+        try:
+            # First try to get match ID from ESPN
+            espn_match_id = self._find_espn_match_id(team_name, match_id)
+            if not espn_match_id:
+                print(f"⚠️ No confirmed lineup available for {team_name}, using full roster")
+                return self.get_real_espn_roster(team_name)
+            
+            print(f"📋 Getting confirmed lineup for {team_name} from match {espn_match_id}")
+            summary_url = f"https://site.api.espn.com/apis/site/v2/sports/soccer/eng.1/summary?event={espn_match_id}"
+            
+            response = requests.get(summary_url, timeout=15)
+            if response.status_code != 200:
+                print(f"⚠️ Match summary not available, using roster")
+                return self.get_real_espn_roster(team_name)
+            
+            data = response.json()
+            
+            # Look for confirmed lineups in rosters section
+            rosters = data.get('rosters', [])
+            team_roster = None
+            
+            for roster in rosters:
+                team_info = roster.get('team', {})
+                if team_info.get('displayName') == team_name or team_info.get('name') == team_name:
+                    team_roster = roster
+                    break
+            
+            if not team_roster:
+                print(f"⚠️ Team roster not found in match data, using full roster")
+                return self.get_real_espn_roster(team_name)
+            
+            # Get confirmed starters only
+            lineup = []
+            athletes = team_roster.get('roster', [])
+            formation = team_roster.get('formation', 'Unknown')
+            
+            print(f"🏗️ Formation: {formation}")
+            
+            # Check if we have any confirmed starters
+            starters = [a for a in athletes if a.get('starter', False)]
+            
+            if not starters:
+                print(f"⚠️ No confirmed starters found, using full roster")
+                return self.get_real_espn_roster(team_name)
+            
+            for athlete_data in starters:
+                
+                athlete = athlete_data.get('athlete', {})
+                position_info = athlete_data.get('position', {})
+                
+                # Get individual player stats from ESPN
+                player_stats = self._get_individual_player_stats(athlete.get('id'))
+                
+                player_data = {
+                    'player_name': athlete.get('displayName', 'Unknown'),
+                    'position': position_info.get('abbreviation', 'Unknown'),
+                    'jersey': athlete_data.get('jersey', '0'),
+                    'age': athlete.get('age', 25),
+                    'starter': True,
+                    'formation_place': athlete_data.get('formationPlace', '0'),
+                    'team': team_name,
+                    'is_home': True,  # Will be set correctly by caller
+                    'expected_minutes': 90,  # Starters expected to play full match
+                    
+                    # Individual ESPN stats (not position templates!)
+                    'goals_per_game': player_stats.get('goals_per_game', 0.0),
+                    'assists_per_game': player_stats.get('assists_per_game', 0.0),
+                    'shots_per_game': player_stats.get('shots_per_game', 0.0),
+                    'shots_on_target_per_game': player_stats.get('shots_on_target_per_game', 0.0),
+                    'yellow_cards_per_game': player_stats.get('yellow_cards_per_game', 0.0),
+                    'fouls_per_game': player_stats.get('fouls_per_game', 0.0),
+                    'saves_per_game': player_stats.get('saves_per_game', 0.0),
+                    'games_played': player_stats.get('games_played', 20),
+                    
+                    # ESPN metadata
+                    'profiled': athlete.get('profiled', False),
+                    'injuries': athlete.get('injuries', [])
+                }
+                
+                lineup.append(player_data)
+            
+            print(f"✅ Confirmed starting XI: {len(lineup)} players")
+            return lineup
+            
+        except Exception as e:
+            print(f"❌ Error getting confirmed lineup: {e}")
+            return self.get_real_espn_roster(team_name)
+    
+    def _find_espn_match_id(self, team_name: str, match_id: str) -> Optional[str]:
+        """Find ESPN match ID for current match."""
+        try:
+            # Get today's matches from ESPN
+            scoreboard_url = "https://site.api.espn.com/apis/site/v2/sports/soccer/eng.1/scoreboard"
+            response = requests.get(scoreboard_url, timeout=10)
+            
+            if response.status_code != 200:
+                return None
+            
+            data = response.json()
+            events = data.get('events', [])
+            
+            for event in events:
+                competitions = event.get('competitions', [])
+                for comp in competitions:
+                    competitors = comp.get('competitors', [])
+                    team_names = [c.get('team', {}).get('displayName', '') for c in competitors]
+                    
+                    if team_name in team_names:
+                        return event.get('id')
+            
+            return None
+            
+        except Exception as e:
+            print(f"⚠️ Could not find ESPN match ID: {e}")
+            return None
+    
+    def _get_individual_player_stats(self, player_id: str) -> Dict:
+        """Get individual player statistics from ESPN API."""
+        try:
+            if not player_id:
+                return {}
+            
+            # ESPN player stats API
+            stats_url = f"https://site.api.espn.com/apis/site/v2/sports/soccer/eng.1/athletes/{player_id}/statistics"
+            response = requests.get(stats_url, timeout=10)
+            
+            if response.status_code != 200:
+                return {}
+            
+            data = response.json()
+            
+            # Parse individual stats from ESPN
+            stats = {}
+            categories = data.get('statistics', {}).get('categories', [])
+            
+            for category in categories:
+                for stat in category.get('statistics', []):
+                    name = stat.get('name', '')
+                    value = stat.get('value', 0)
+                    
+                    # Map ESPN stat names to our format
+                    if name == 'totalGoals':
+                        stats['total_goals'] = float(value)
+                    elif name == 'goalAssists':
+                        stats['total_assists'] = float(value)
+                    elif name == 'totalShots':
+                        stats['total_shots'] = float(value)
+                    elif name == 'shotsOnTarget':
+                        stats['total_shots_on_target'] = float(value)
+                    elif name == 'yellowCards':
+                        stats['total_yellow_cards'] = float(value)
+                    elif name == 'foulsCommitted':
+                        stats['total_fouls'] = float(value)
+                    elif name == 'saves':
+                        stats['total_saves'] = float(value)
+                    elif name == 'appearances':
+                        stats['games_played'] = max(1, int(value))  # Avoid division by zero
+            
+            # Calculate per-game averages
+            games = stats.get('games_played', 20)  # Default to 20 games if not available
+            
+            return {
+                'goals_per_game': round(stats.get('total_goals', 0) / games, 3),
+                'assists_per_game': round(stats.get('total_assists', 0) / games, 3),
+                'shots_per_game': round(stats.get('total_shots', 0) / games, 3),
+                'shots_on_target_per_game': round(stats.get('total_shots_on_target', 0) / games, 3),
+                'yellow_cards_per_game': round(stats.get('total_yellow_cards', 0) / games, 3),
+                'fouls_per_game': round(stats.get('total_fouls', 0) / games, 3),
+                'saves_per_game': round(stats.get('total_saves', 0) / games, 3),
+                'games_played': games
+            }
+            
+        except Exception as e:
+            print(f"⚠️ Could not get individual stats for player {player_id}: {e}")
+            return {}
+
     def get_real_espn_roster(self, team_name: str, is_home: bool = True) -> List[Dict]:
         """Get real team roster from ESPN API - NO FAKE DATA."""
         try:
@@ -127,6 +305,10 @@ class LiveDataScraper:
                 
                 if suitable_player:
                     used_players.add(suitable_player.get('id'))
+                    
+                    # Get individual player stats from ESPN
+                    player_stats = self._get_individual_player_stats(suitable_player.get('id'))
+                    
                     lineup.append({
                         'shirt_number': suitable_player.get('jersey', 1),
                         'player_name': suitable_player.get('displayName', 'Unknown'),
@@ -137,7 +319,21 @@ class LiveDataScraper:
                         'away_team': team_name if not is_home else None,
                         'espn_id': suitable_player.get('id'),
                         'age': suitable_player.get('age', 0),
-                        'real_player': True  # Mark as real player
+                        'real_player': True,  # Mark as real player
+                        
+                        # Individual ESPN stats (not position templates!)
+                        'goals_per_game': player_stats.get('goals_per_game', 0.0),
+                        'assists_per_game': player_stats.get('assists_per_game', 0.0),
+                        'shots_per_game': player_stats.get('shots_per_game', 0.0),
+                        'shots_on_target_per_game': player_stats.get('shots_on_target_per_game', 0.0),
+                        'yellow_cards_per_game': player_stats.get('yellow_cards_per_game', 0.0),
+                        'fouls_per_game': player_stats.get('fouls_per_game', 0.0),
+                        'saves_per_game': player_stats.get('saves_per_game', 0.0),
+                        'games_played': player_stats.get('games_played', 20),
+                        
+                        # ESPN metadata
+                        'profiled': suitable_player.get('profiled', False),
+                        'injuries': suitable_player.get('injuries', [])
                     })
                 
                 if len(lineup) >= 11:

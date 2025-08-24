@@ -209,9 +209,9 @@ def main():
     populate_matches_csv(fixtures)
     
     print(f"\nSUCCESS: PREMIER LEAGUE MATCH POPULATION COMPLETE!")
-    print(f"   📊 {len(fixtures)} matches stored")
-    print(f"   🎯 Only supported teams included")
-    print(f"   ⏰ Next 24 hours coverage")
+    print(f"   INFO: {len(fixtures)} matches stored")
+    print(f"   INFO: Only supported teams included")
+    print(f"   INFO: Next 24 hours coverage")
 
 if __name__ == "__main__":
     main()

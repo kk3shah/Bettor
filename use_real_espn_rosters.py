@@ -136,20 +136,29 @@ def get_real_players_from_espn(scraper, team_name):
         return []
 
 def generate_analysis_for_match_real_espn(scraper, match_id, home_team, away_team):
-    """Generate analysis using REAL ESPN player rosters."""
+    """Generate analysis using CONFIRMED LINEUPS from ESPN API."""
     
-    # Get real players from ESPN API
-    home_players = get_real_players_from_espn(scraper, home_team)
-    away_players = get_real_players_from_espn(scraper, away_team)
+    # Try to get CONFIRMED starting lineups first
+    print(f"   📋 Getting confirmed lineups for {home_team} vs {away_team}...")
+    home_players = scraper.get_confirmed_lineup(home_team, match_id)
+    away_players = scraper.get_confirmed_lineup(away_team, match_id)
     
-    all_players = home_players + away_players
+    # Set home/away flags
+    if home_players:
+        for player in home_players:
+            player['is_home'] = True
+    if away_players:
+        for player in away_players:
+            player['is_home'] = False
+    
+    all_players = (home_players or []) + (away_players or [])
     
     if not all_players:
-        print(f"WARNING: No REAL ESPN player data for {home_team} vs {away_team}")
+        print(f"WARNING: No confirmed lineup data for {home_team} vs {away_team}")
         return []
     
-    print(f"   📋 {home_team}: {len(home_players)} REAL players from ESPN")
-    print(f"   📋 {away_team}: {len(away_players)} REAL players from ESPN")
+    print(f"   ✅ {home_team}: {len(home_players or [])} confirmed starters")
+    print(f"   ✅ {away_team}: {len(away_players or [])} confirmed starters")
     
     analysis_entries = []
     
@@ -167,26 +176,26 @@ def generate_analysis_for_match_real_espn(scraper, match_id, home_team, away_tea
         
         full_position = position_mapping.get(real_position, 'Midfielder')
         
-        # Get realistic stats for this player with REAL position
-        player_stats = get_realistic_player_stats_for_position(full_position)
+        # Use INDIVIDUAL ESPN player stats (not position templates!)
+        # These come directly from the confirmed lineup with real ESPN data
         
-        # Define props based on REAL position
+        # Define props based on INDIVIDUAL player stats
         if full_position == 'Goalkeeper':
             # Goalkeeper-specific props
             all_props = [
-                ('Player Yellow Cards', player_stats['yellow_cards_per_game']),
-                ('Player Fouls', player_stats['fouls_per_game']),
-                ('Player Saves', player_stats['saves_per_game'])
+                ('Player Yellow Cards', player.get('yellow_cards_per_game', 0.0)),
+                ('Player Fouls', player.get('fouls_per_game', 0.0)),
+                ('Player Saves', player.get('saves_per_game', 0.0))
             ]
         else:
-            # Outfield player props (no passes)
+            # Outfield player props using REAL individual stats
             all_props = [
-                ('Player Yellow Cards', player_stats['yellow_cards_per_game']),
-                ('Player Shots', player_stats['shots_per_game']),
-                ('Player Shots on Target', player_stats['shots_on_target_per_game']),
-                ('Player Assists', player_stats['assists_per_game']),
-                ('Player Goals', player_stats['goals_per_game']),
-                ('Player Fouls', player_stats['fouls_per_game'])
+                ('Player Yellow Cards', player.get('yellow_cards_per_game', 0.0)),
+                ('Player Shots', player.get('shots_per_game', 0.0)),
+                ('Player Shots on Target', player.get('shots_on_target_per_game', 0.0)),
+                ('Player Assists', player.get('assists_per_game', 0.0)),
+                ('Player Goals', player.get('goals_per_game', 0.0)),
+                ('Player Fouls', player.get('fouls_per_game', 0.0))
             ]
         
         for prop_name, rate_per_game in all_props:
@@ -208,10 +217,10 @@ def generate_analysis_for_match_real_espn(scraper, match_id, home_team, away_tea
             enhanced_data = {
                 'player': player.get('player_name', 'Unknown'),
                 'prop': prop_name,
-                'threshold': str(threshold),
+                'threshold': threshold,  # Keep as int for ML model
                 'model_prob': model_prob,
-                'rate_per_game': rate_per_game,
-                'games_played': player_stats['games_played'],
+                'rate_per_game': rate_per_game,  # Individual player's rate
+                'games_played': player.get('games_played', 20),  # Individual player's games
                 'position': full_position,
                 'age': espn_age,
                 'jersey_number': espn_jersey,
@@ -234,9 +243,9 @@ def generate_analysis_for_match_real_espn(scraper, match_id, home_team, away_tea
                 'model_prob': round(model_prob, 4),
                 'final_score': round(final_score, 1),
                 'suggested_stake': round(suggested_stake, 2),
-                'games_played': player_stats['games_played'],
+                'games_played': player.get('games_played', 20),  # Individual player's games
                 'position': full_position,
-                'rate_per_game': round(rate_per_game, 3),
+                'rate_per_game': round(rate_per_game, 3),  # Individual player's rate
                 'age': espn_age,
                 'jersey_number': espn_jersey,
                 'is_profiled': espn_profiled,
