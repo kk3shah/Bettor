@@ -922,32 +922,52 @@ def trigger_refresh():
 # ============================================================================
 
 def run_daily_refresh():
-    """Run the daily data refresh - fetch new matches and generate analysis."""
+    """Run the daily data refresh - DELETE ALL DATA and recreate from scratch for next 24 hours."""
     try:
-        print("🌙 Starting daily refresh...")
+        print("🌙 Starting daily refresh - COMPLETE DATA REGENERATION...")
         
-        # Step 1: Get new Premier League matches for next 24 hours
-        print("📅 Fetching upcoming Premier League matches...")
-        result = subprocess.run([sys.executable, 'populate_real_premier_league_matches.py'], 
-                              capture_output=True, text=True, timeout=300)
+        # Step 1: DELETE ALL DATA FILES (clean slate)
+        print("🗑️ Deleting all existing data files...")
+        data_files_to_delete = [
+            'data/matches.csv',
+            'data/analysis.csv', 
+            'data/ml_performance.json'
+        ]
         
-        if result.returncode == 0:
-            print("✅ Successfully updated matches.csv")
-        else:
-            print(f"❌ Error updating matches: {result.stderr}")
+        for file_path in data_files_to_delete:
+            try:
+                if Path(file_path).exists():
+                    Path(file_path).unlink()
+                    print(f"   ✅ Deleted {file_path}")
+                else:
+                    print(f"   ⚠️ {file_path} not found (already clean)")
+            except Exception as e:
+                print(f"   ❌ Error deleting {file_path}: {e}")
+        
+        # Step 2: Generate fresh matches for next 24 hours
+        print("📅 Generating fresh Premier League matches for next 24 hours...")
+        try:
+            import populate_real_premier_league_matches
+            populate_real_premier_league_matches.main()
+            print("✅ Successfully generated fresh matches.csv")
+        except Exception as e:
+            print(f"❌ Error generating matches: {e}")
+            import traceback
+            traceback.print_exc()
             return False
         
-        # Step 2: Generate fresh analysis with real ESPN rosters
-        print("🧠 Generating fresh betting analysis...")
-        result = subprocess.run([sys.executable, 'use_real_espn_rosters.py'], 
-                              capture_output=True, text=True, timeout=600)
-        
-        if result.returncode == 0:
-            print("✅ Successfully generated fresh analysis")
-            print(f"📊 Daily refresh completed at {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}")
+        # Step 3: Generate fresh betting analysis with real ESPN rosters
+        print("🧠 Generating fresh betting analysis from real ESPN data...")
+        try:
+            import use_real_espn_rosters
+            use_real_espn_rosters.regenerate_with_real_espn_data()
+            print("✅ Successfully generated fresh analysis.csv")
+            print(f"🎯 COMPLETE DATA REFRESH FINISHED at {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}")
             return True
-        else:
-            print(f"❌ Error generating analysis: {result.stderr}")
+        except Exception as e:
+            print(f"❌ Error generating analysis: {e}")
+            import traceback
+            traceback.print_exc()
             return False
             
     except subprocess.TimeoutExpired:

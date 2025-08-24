@@ -124,15 +124,15 @@ def get_real_players_from_espn(scraper, team_name):
         roster = scraper.get_real_espn_roster(team_name)
         
         if not roster:
-            print(f"❌ No real ESPN data for {team_name}")
+            print(f"ERROR: No real ESPN data for {team_name}")
             return []
         
         # Return full player objects with position data
-        print(f"✅ Got {len(roster)} real players from ESPN")
+        print(f"SUCCESS: Got {len(roster)} real players from ESPN")
         return roster
         
     except Exception as e:
-        print(f"❌ Error getting ESPN data for {team_name}: {e}")
+        print(f"ERROR: Error getting ESPN data for {team_name}: {e}")
         return []
 
 def generate_analysis_for_match_real_espn(scraper, match_id, home_team, away_team):
@@ -145,7 +145,7 @@ def generate_analysis_for_match_real_espn(scraper, match_id, home_team, away_tea
     all_players = home_players + away_players
     
     if not all_players:
-        print(f"⚠️ No REAL ESPN player data for {home_team} vs {away_team}")
+        print(f"WARNING: No REAL ESPN player data for {home_team} vs {away_team}")
         return []
     
     print(f"   📋 {home_team}: {len(home_players)} REAL players from ESPN")
@@ -262,7 +262,7 @@ def regenerate_with_real_espn_data():
     # Read existing matches
     matches_file = Path("data/matches.csv")
     if not matches_file.exists():
-        print("❌ matches.csv not found!")
+        print("ERROR: matches.csv not found!")
         return
     
     matches = []
@@ -282,16 +282,16 @@ def regenerate_with_real_espn_data():
         home_team = match['home_team']
         away_team = match['away_team']
         
-        print(f"🎯 Generating REAL analysis for: {home_team} vs {away_team}")
+        print(f"INFO: Generating REAL analysis for: {home_team} vs {away_team}")
         
         # Check if both teams are supported by ESPN
         if not scraper.is_match_supported(home_team, away_team):
-            print(f"⚠️ Match not supported by ESPN - skipping")
+            print(f"WARNING: Match not supported by ESPN - skipping")
             continue
         
         match_analysis = generate_analysis_for_match_real_espn(scraper, match_id, home_team, away_team)
         
-        print(f"   ✅ Generated {len(match_analysis)} opportunities with REAL ESPN players")
+        print(f"   SUCCESS: Generated {len(match_analysis)} opportunities with REAL ESPN players")
         
         for entry in match_analysis:
             entry['analysis_id'] = analysis_id
@@ -312,15 +312,15 @@ def regenerate_with_real_espn_data():
         for entry in all_analysis:
             writer.writerow(entry)
     
-    print(f"\n✅ REAL ESPN DATA ANALYSIS COMPLETE!")
-    print(f"   📊 {len(all_analysis)} total opportunities with REAL players")
-    print(f"   🎯 100% ESPN API data - NO FAKE PLAYERS")
+    print(f"\nSUCCESS: REAL ESPN DATA ANALYSIS COMPLETE!")
+    print(f"   INFO: {len(all_analysis)} total opportunities with REAL players")
+    print(f"   INFO: 100% ESPN API data - NO FAKE PLAYERS")
     print(f"   📈 Current squad rosters from ESPN")
     
     # Show sample analysis
     if all_analysis:
         sample = json.loads(all_analysis[0]['analysis_data'])
-        print(f"\n🔍 SAMPLE REAL ANALYSIS:")
+        print(f"\nINFO: SAMPLE REAL ANALYSIS:")
         print(f"   Player: {sample['player']} (REAL ESPN player)")
         print(f"   Prop: {sample['prop']} ≥ {sample['threshold']}")
         print(f"   Model Prob: {sample['model_prob']:.1%}")
@@ -328,7 +328,7 @@ def regenerate_with_real_espn_data():
 
 if __name__ == "__main__":
     regenerate_with_real_espn_data()
-    print(f"\n🚀 RESTART WEB APP TO SEE REAL ESPN PLAYERS!")
-    print(f"   ✅ No more fake or outdated players")
-    print(f"   ✅ Current ESPN roster data")
-    print(f"   ✅ >1% edge filter applied")
+    print(f"\nINFO: RESTART WEB APP TO SEE REAL ESPN PLAYERS!")
+    print(f"   SUCCESS: No more fake or outdated players")
+    print(f"   SUCCESS: Current ESPN roster data")
+    print(f"   SUCCESS: >1% edge filter applied")
