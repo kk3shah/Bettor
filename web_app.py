@@ -868,6 +868,48 @@ def get_matches():
     
     return jsonify(formatted_matches)
 
+@app.route('/api/debug-csv-matching')
+def debug_csv_matching():
+    """Debug CSV matching logic specifically."""
+    home_team = request.args.get('home_team', 'Fulham')
+    away_team = request.args.get('away_team', 'Manchester United')
+    
+    try:
+        import csv, json
+        from pathlib import Path
+        
+        debug_info = {"requested": f"{home_team} vs {away_team}"}
+        
+        # Check matches.csv
+        matches_file = Path("data/matches.csv")
+        if matches_file.exists():
+            with open(matches_file, 'r', encoding='utf-8') as f:
+                reader = csv.DictReader(f)
+                matches = []
+                for row in reader:
+                    matches.append({
+                        "match_id": row['match_id'],
+                        "home_team": f"'{row['home_team']}'",
+                        "away_team": f"'{row['away_team']}'",
+                        "matches_request": (row['home_team'] == home_team and row['away_team'] == away_team)
+                    })
+                debug_info["matches_csv"] = matches
+        
+        # Check analysis.csv
+        analysis_file = Path("data/analysis.csv")
+        if analysis_file.exists():
+            with open(analysis_file, 'r', encoding='utf-8') as f:
+                reader = csv.DictReader(f)
+                analysis_count = {}
+                for row in reader:
+                    match_id = row['match_id']
+                    analysis_count[match_id] = analysis_count.get(match_id, 0) + 1
+                debug_info["analysis_csv"] = analysis_count
+        
+        return jsonify(debug_info)
+    except Exception as e:
+        return jsonify({"error": str(e)})
+
 @app.route('/api/debug-files')
 def debug_files():
     """Debug endpoint to check what files exist on Railway"""

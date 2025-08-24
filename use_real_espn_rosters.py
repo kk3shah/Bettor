@@ -200,6 +200,11 @@ def generate_analysis_for_match_real_espn(scraper, match_id, home_team, away_tea
         
         for prop_name, rate_per_game in all_props:
             
+            # CRITICAL: Skip if no real statistical data available
+            if rate_per_game <= 0:
+                print(f"❌ SKIPPING {player.get('player_name', 'Unknown')} {prop_name}: No real ESPN stats (rate={rate_per_game}) - NO FAKE DATA")
+                continue
+            
             # Get the optimal (highest reasonable) threshold for this prop
             threshold = get_optimal_thresholds(rate_per_game, prop_name)
             
@@ -257,6 +262,17 @@ def generate_analysis_for_match_real_espn(scraper, match_id, home_team, away_tea
                 'analysis_data': json.dumps(analysis_data),
                 'generated_at': datetime.now().isoformat()
             })
+    
+    # If no player analysis was generated (no real stats), generate team props as fallback
+    if not analysis_entries:
+        print(f"⚠️ No player analysis generated for {home_team} vs {away_team} - generating TEAM PROPS ONLY")
+        try:
+            from team_props_analyzer import generate_team_props_analysis
+            team_analysis = generate_team_props_analysis(match_id, home_team, away_team)
+            analysis_entries.extend(team_analysis)
+            print(f"✅ Generated {len(team_analysis)} team prop opportunities using REAL team data")
+        except Exception as e:
+            print(f"❌ Team props generation failed: {e}")
     
     return analysis_entries
 

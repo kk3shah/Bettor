@@ -266,35 +266,15 @@ class LiveDataScraper:
             all_stats_zero = all(v == 0.0 for v in non_games_stats)
             
             if all_stats_zero:
-                print(f"⚠️ {player_data.get('displayName')}: ESPN returned all 0.0 stats, using fallback")
-                return self._get_fallback_stats_by_position(team_name)
+                print(f"❌ {player_data.get('displayName')}: No real ESPN stats available - SKIPPING PLAYER")
+                return {}  # Return empty - no fake data
             else:
-                print(f"📊 {player_data.get('displayName')}: {result['shots_per_game']} shots/game, {result['games_played']} games")
+                print(f"✅ {player_data.get('displayName')}: {result['shots_per_game']} shots/game (REAL ESPN DATA)")
                 return result
             
         except Exception as e:
-            print(f"⚠️ ESPN stats failed for player {player_id}, using fallback: {e}")
-            return self._get_fallback_stats_by_position(team_name)
-    
-    def _get_fallback_stats_by_position(self, team_name: str) -> Dict:
-        """Get reasonable fallback statistics based on team quality."""
-        # Provide realistic estimates for Premier League players
-        # Higher estimates for top teams, lower for others
-        top_teams = ['Manchester United', 'Arsenal', 'Chelsea', 'Liverpool', 'Manchester City']
-        is_top_team = team_name in top_teams
-        
-        multiplier = 1.3 if is_top_team else 1.0
-        
-        return {
-            'goals_per_game': round(0.12 * multiplier, 3),      # ~4-5 goals per season
-            'assists_per_game': round(0.18 * multiplier, 3),   # ~6-7 assists per season  
-            'shots_per_game': round(1.5 * multiplier, 3),      # ~50-60 shots per season
-            'shots_on_target_per_game': round(0.5 * multiplier, 3),  # ~17-20 on target per season
-            'yellow_cards_per_game': 0.08,    # ~3 cards per season (same for all)
-            'fouls_per_game': 0.7,      # ~25 fouls per season
-            'saves_per_game': 0.0,      # Only for goalkeepers
-            'games_played': 28          # Typical Premier League appearances
-        }
+            print(f"❌ ESPN stats failed for player {player_id}: {e} - SKIPPING PLAYER")
+            return {}  # Return empty - no fake data
 
     def get_real_espn_roster(self, team_name: str, is_home: bool = True) -> List[Dict]:
         """Get real team roster from ESPN API - NO FAKE DATA."""
