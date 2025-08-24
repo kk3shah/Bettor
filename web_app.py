@@ -537,73 +537,73 @@ class BettorWebService:
                                 confidence = 'Medium'
                             else:
                                 confidence = 'Low'
-                                            
-                                            # Calculate profitable odds thresholds
-                                            # Fair odds = 1 / model_probability
-                                            fair_odds_decimal = 1 / model_prob if model_prob > 0 else 2.0
-                                            
-                                            # Add 5% margin for profitable betting
-                                            min_profitable_decimal = fair_odds_decimal * 1.05
-                                            
-                                            # Convert to American odds
-                                            if min_profitable_decimal >= 2.0:
-                                                min_profitable_american = f"+{int((min_profitable_decimal - 1) * 100)}"
-                                            else:
-                                                min_profitable_american = f"-{int(100 / (min_profitable_decimal - 1))}"
-                                            
-                                            if is_team_prop:
-                                                # Team prop bet
-                                                team_name = analysis_data.get('team', '')
-                                                team_logo = analysis_data.get('logo', '') or get_team_logo(team_name)
-                                                
-                                                bet_obj = {
-                                                    'player': team_name,  # Use team name as "player"
-                                                    'bet_description': f"{analysis_data['prop']} ≥ {analysis_data['threshold']}",
-                                                    'market': analysis_data['prop'],
-                                                    'threshold': analysis_data['threshold'],
-                                                    'model_prob': model_prob,
-                                                    'model_probability_percent': round(model_prob * 100, 1),
-                                                    'final_score': round(final_score, 1),
-                                                    'final_score_percent': round(final_score, 1),
-                                                    'suggested_stake': analysis_data.get('suggested_stake', 10.0),
-                                                    'confidence': confidence,
-                                                    'fair_odds_decimal': round(fair_odds_decimal, 2),
-                                                    'min_profitable_odds_decimal': round(min_profitable_decimal, 2),
-                                                    'min_profitable_odds_american': min_profitable_american,
-                                                    'apps_this_season': 'Team',  # Show "Team" instead of apps
-                                                    'position': 'Team',
-                                                    'avg_per_game': round(rate_per_game, 2),
-                                                    'team_logo': team_logo,
-                                                    'is_team_prop': True,
-                                                    'reasoning': f"Final Score: {round(final_score, 1)} | Model: {round(model_prob * 100, 1)}% | Avg: {round(rate_per_game, 2)}/game"
-                                                }
-                                            else:
-                                                # Player prop bet
-                                                player_name = analysis_data.get('player', '')
-                                                
-                                                bet_obj = {
-                                                    'player': player_name,
-                                                    'bet_description': f"{analysis_data['prop']} ≥ {analysis_data['threshold']}",
-                                                    'market': analysis_data['prop'],
-                                                    'threshold': analysis_data['threshold'],
-                                                    'model_prob': model_prob,
-                                                    'model_probability_percent': round(model_prob * 100, 1),
-                                                    'final_score': round(final_score, 1),
-                                                    'final_score_percent': round(final_score, 1),
-                                                    'suggested_stake': analysis_data.get('suggested_stake', 10.0),
-                                                    'confidence': confidence,
-                                                    'fair_odds_decimal': round(fair_odds_decimal, 2),
-                                                    'min_profitable_odds_decimal': round(min_profitable_decimal, 2),
-                                                    'min_profitable_odds_american': min_profitable_american,
-                                                    'apps_this_season': analysis_data.get('games_played', 'N/A'),
-                                                    'position': analysis_data.get('position', ''),
-                                                    'avg_per_game': round(rate_per_game, 2),
-                                                    'is_team_prop': False,
-                                                    'reasoning': f"Final Score: {round(final_score, 1)} | Model: {round(model_prob * 100, 1)}% | Avg: {round(rate_per_game, 2)}/game"
-                                                }
-                                            
-                                            matching_analysis.append(bet_obj)
-                                        break
+                            
+                            # Calculate profitable odds thresholds
+                            # Fair odds = 1 / model_probability
+                            fair_odds_decimal = 1 / model_prob if model_prob > 0 else 2.0
+                            
+                            # Add 5% margin for profitable betting
+                            min_profitable_decimal = fair_odds_decimal * 1.05
+                            
+                            # Convert to American odds
+                            if min_profitable_decimal >= 2.0:
+                                min_profitable_american = f"+{int((min_profitable_decimal - 1) * 100)}"
+                            else:
+                                min_profitable_american = f"-{int(100 / (min_profitable_decimal - 1))}"
+                            
+                            if is_team_prop:
+                                # Team prop bet
+                                team_name = analysis_data.get('team', '')
+                                team_logo = analysis_data.get('logo', '') or get_team_logo(team_name)
+                                
+                                bet_obj = {
+                                    'player': team_name,  # Use team name as "player"
+                                    'bet_description': f"{analysis_data['prop']} ≥ {analysis_data['threshold']}",
+                                    'market': analysis_data['prop'],
+                                    'threshold': analysis_data['threshold'],
+                                    'model_prob': model_prob,
+                                    'model_probability_percent': round(model_prob * 100, 1),
+                                    'final_score': round(final_score, 1),
+                                    'final_score_percent': round(final_score, 1),
+                                    'suggested_stake': analysis_data.get('suggested_stake', 10.0),
+                                    'confidence': confidence,
+                                    'fair_odds_decimal': round(fair_odds_decimal, 2),
+                                    'min_profitable_odds_decimal': round(min_profitable_decimal, 2),
+                                    'min_profitable_odds_american': min_profitable_american,
+                                    'apps_this_season': 'Team',  # Show "Team" instead of apps
+                                    'position': 'Team',
+                                    'avg_per_game': round(rate_per_game, 2),
+                                    'team_logo': team_logo,
+                                    'is_team_prop': True,
+                                    'reasoning': f"Final Score: {round(final_score, 1)} | Model: {round(model_prob * 100, 1)}% | Avg: {round(rate_per_game, 2)}/game"
+                                }
+                            else:
+                                # Player prop bet
+                                player_name = analysis_data.get('player', '')
+                                
+                                bet_obj = {
+                                    'player': player_name,
+                                    'bet_description': f"{analysis_data['prop']} ≥ {analysis_data['threshold']}",
+                                    'market': analysis_data['prop'],
+                                    'threshold': analysis_data['threshold'],
+                                    'model_prob': model_prob,
+                                    'model_probability_percent': round(model_prob * 100, 1),
+                                    'final_score': round(final_score, 1),
+                                    'final_score_percent': round(final_score, 1),
+                                    'suggested_stake': analysis_data.get('suggested_stake', 10.0),
+                                    'confidence': confidence,
+                                    'fair_odds_decimal': round(fair_odds_decimal, 2),
+                                    'min_profitable_odds_decimal': round(min_profitable_decimal, 2),
+                                    'min_profitable_odds_american': min_profitable_american,
+                                    'apps_this_season': analysis_data.get('games_played', 'N/A'),
+                                    'position': analysis_data.get('position', ''),
+                                    'avg_per_game': round(rate_per_game, 2),
+                                    'is_team_prop': False,
+                                    'reasoning': f"Final Score: {round(final_score, 1)} | Model: {round(model_prob * 100, 1)}% | Avg: {round(rate_per_game, 2)}/game"
+                                }
+                            
+                            matching_analysis.append(bet_obj)
+                        break
                         
                     except (json.JSONDecodeError, KeyError) as e:
                         continue
