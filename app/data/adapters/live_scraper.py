@@ -261,11 +261,16 @@ class LiveDataScraper:
                 'games_played': games
             }
             
-            # Debug output for non-zero stats
-            if any(v > 0 for v in result.values() if isinstance(v, (int, float))):
-                print(f"📊 {player_data.get('displayName')}: {result['shots_per_game']} shots/game, {result['games_played']} games")
+            # Check if all stats are zero (ESPN has no real data)
+            non_games_stats = [v for k, v in result.items() if k != 'games_played' and isinstance(v, (int, float))]
+            all_stats_zero = all(v == 0.0 for v in non_games_stats)
             
-            return result
+            if all_stats_zero:
+                print(f"⚠️ {player_data.get('displayName')}: ESPN returned all 0.0 stats, using fallback")
+                return self._get_fallback_stats_by_position(team_name)
+            else:
+                print(f"📊 {player_data.get('displayName')}: {result['shots_per_game']} shots/game, {result['games_played']} games")
+                return result
             
         except Exception as e:
             print(f"⚠️ ESPN stats failed for player {player_id}, using fallback: {e}")
