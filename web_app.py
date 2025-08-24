@@ -14,6 +14,7 @@ import time
 import subprocess
 import logging
 from pathlib import Path
+import csv
 
 # Add project root to path
 sys.path.append(os.path.dirname(os.path.abspath(__file__)))
