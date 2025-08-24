@@ -66,13 +66,11 @@ class BettorWebService:
         except Exception as e:
             print(f"⚠️ Error reading matches CSV: {e}")
         
-        # PRIORITY 2: Generate and cache matches if CSV empty
-        print("📊 CSV empty - generating matches and caching...")
-        generated_matches = self.get_simulation_matches(hours_ahead)
+        # PRIORITY 2: Return empty if no CSV - only show Premier League matches we can analyze
+        print("📊 CSV empty - no matches available (Premier League only)")
+        print("💡 Run: python populate_real_premier_league_matches.py to get real matches")
         
-        print(f"💾 Matches will be cached by populate_real_premier_league_matches.py")
-        
-        return generated_matches
+        return []
     
     def get_real_data_matches(self):
         """Get matches that have real scraped data available."""
