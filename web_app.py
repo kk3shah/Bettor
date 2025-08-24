@@ -547,8 +547,42 @@ def index():
 def get_matches():
     """API endpoint to get upcoming matches."""
     hours = request.args.get('hours', 8, type=int)
-    matches = bettor_service.get_upcoming_matches(hours)
-    return jsonify(matches)
+    raw_matches = bettor_service.get_upcoming_matches(hours)
+    
+    # Transform CSV format to frontend format
+    formatted_matches = []
+    for match in raw_matches:
+        try:
+            from datetime import datetime
+            kickoff_dt = datetime.fromisoformat(match['kickoff_time'])
+            now = datetime.now()
+            
+            # Calculate time until match
+            time_diff = kickoff_dt - now
+            hours_until = time_diff.total_seconds() / 3600
+            
+            if hours_until > 0:  # Only future matches
+                if hours_until < 1:
+                    time_until = f"{int(time_diff.total_seconds() / 60)} minutes"
+                else:
+                    time_until = f"{hours_until:.1f} hours"
+                
+                formatted_match = {
+                    'id': match['match_id'],
+                    'home_team': match['home_team'],
+                    'away_team': match['away_team'],
+                    'league': match['league'],
+                    'kickoff': kickoff_dt.strftime('%H:%M'),
+                    'kickoff_time': match['kickoff_time'],
+                    'time_until': time_until,
+                    'venue': f"{match['home_team']} Stadium"
+                }
+                formatted_matches.append(formatted_match)
+        except Exception as e:
+            print(f"Error formatting match: {e}")
+            continue
+    
+    return jsonify(formatted_matches)
 
 @app.route('/api/analyze')
 def analyze_match():
