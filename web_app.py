@@ -532,7 +532,9 @@ class BettorWebService:
                             with open(matches_file, 'r', encoding='utf-8') as mf:
                                 match_reader = csv.DictReader(mf)
                                 for match_row in match_reader:
+                                    print(f"🔍 Checking match_id {match_row['match_id']} vs {match_id}: {match_row['home_team']} vs {match_row['away_team']}")
                                     if match_row['match_id'] == match_id:
+                                        print(f"✅ Match ID found! Comparing teams: '{match_row['home_team']}' == '{home_team}' and '{match_row['away_team']}' == '{away_team}'")
                                         if (match_row['home_team'] == home_team and 
                                             match_row['away_team'] == away_team):
                                             # Transform data to match frontend expectations
