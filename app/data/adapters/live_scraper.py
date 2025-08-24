@@ -119,7 +119,7 @@ class LiveDataScraper:
                 position_info = athlete_data.get('position', {})
                 
                 # Get individual player stats from ESPN
-                player_stats = self._get_individual_player_stats(athlete.get('id'))
+                player_stats = self._get_individual_player_stats(athlete)
                 
                 player_data = {
                     'player_name': athlete.get('displayName', 'Unknown'),
@@ -184,50 +184,45 @@ class LiveDataScraper:
             print(f"⚠️ Could not find ESPN match ID: {e}")
             return None
     
-    def _get_individual_player_stats(self, player_id: str) -> Dict:
-        """Get individual player statistics from ESPN API."""
+    def _get_individual_player_stats(self, player_data: Dict) -> Dict:
+        """Extract individual player statistics from ESPN roster data."""
         try:
-            if not player_id:
+            if not player_data:
                 return {}
             
-            # ESPN player stats API
-            stats_url = f"https://site.api.espn.com/apis/site/v2/sports/soccer/eng.1/athletes/{player_id}/statistics"
-            response = requests.get(stats_url, timeout=10)
+            # Extract stats from the player's statistics section
+            statistics = player_data.get('statistics', {})
+            splits = statistics.get('splits', {})
+            categories = splits.get('categories', [])
             
-            if response.status_code != 200:
-                return {}
-            
-            data = response.json()
-            
-            # Parse individual stats from ESPN
+            # Parse individual stats from ESPN roster data
             stats = {}
-            categories = data.get('statistics', {}).get('categories', [])
             
             for category in categories:
-                for stat in category.get('statistics', []):
+                for stat in category.get('stats', []):
                     name = stat.get('name', '')
-                    value = stat.get('value', 0)
+                    value = float(stat.get('value', 0))
                     
                     # Map ESPN stat names to our format
                     if name == 'totalGoals':
-                        stats['total_goals'] = float(value)
+                        stats['total_goals'] = value
                     elif name == 'goalAssists':
-                        stats['total_assists'] = float(value)
+                        stats['total_assists'] = value
                     elif name == 'totalShots':
-                        stats['total_shots'] = float(value)
+                        stats['total_shots'] = value
                     elif name == 'shotsOnTarget':
-                        stats['total_shots_on_target'] = float(value)
+                        stats['total_shots_on_target'] = value
                     elif name == 'yellowCards':
-                        stats['total_yellow_cards'] = float(value)
+                        stats['total_yellow_cards'] = value
                     elif name == 'foulsCommitted':
-                        stats['total_fouls'] = float(value)
+                        stats['total_fouls'] = value
                     elif name == 'saves':
-                        stats['total_saves'] = float(value)
+                        stats['total_saves'] = value
                     elif name == 'appearances':
                         stats['games_played'] = max(1, int(value))  # Avoid division by zero
             
             # Calculate per-game averages
-            games = stats.get('games_played', 20)  # Default to 20 games if not available
+            games = stats.get('games_played', 1)  # Use actual games played
             
             return {
                 'goals_per_game': round(stats.get('total_goals', 0) / games, 3),
@@ -241,7 +236,7 @@ class LiveDataScraper:
             }
             
         except Exception as e:
-            print(f"⚠️ Could not get individual stats for player {player_id}: {e}")
+            print(f"⚠️ Could not extract individual stats: {e}")
             return {}
 
     def get_real_espn_roster(self, team_name: str, is_home: bool = True) -> List[Dict]:
@@ -307,7 +302,7 @@ class LiveDataScraper:
                     used_players.add(suitable_player.get('id'))
                     
                     # Get individual player stats from ESPN
-                    player_stats = self._get_individual_player_stats(suitable_player.get('id'))
+                    player_stats = self._get_individual_player_stats(suitable_player)
                     
                     lineup.append({
                         'shirt_number': suitable_player.get('jersey', 1),

@@ -527,10 +527,8 @@ class BettorWebService:
                                             # Check if this is a team prop or player prop
                                             is_team_prop = analysis_data.get('prop_type') == 'team'
                                             
-                                            # FILTER: Remove bets where player has 0 average per game for this metric
-                                            rate_per_game = analysis_data.get('rate_per_game', 0)
-                                            if rate_per_game <= 0:
-                                                continue  # Skip players with 0 average for this metric
+                                                                        # Get rate per game - allow 0 values for now since ESPN individual stats API needs fixing
+                            rate_per_game = analysis_data.get('rate_per_game', 0)
                                             
                                             # Calculate confidence based on Final Score (realistic thresholds)
                                             if final_score >= 60:
