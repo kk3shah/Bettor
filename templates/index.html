@@ -4,15 +4,15 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>🎯 Bettor - Smart Football Betting</title>
-    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+    <link rel="stylesheet" href="/static/style.css?v={{ cache_bust }}">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     
     <!-- Mobile optimizations -->
-    <meta name="theme-color" content="#0066ff">
+    <meta name="theme-color" content="#0F172A">
     <meta name="apple-mobile-web-app-capable" content="yes">
-    <meta name="apple-mobile-web-app-status-bar-style" content="default">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     
     <!-- Favicon -->
     <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2280%22>🎯</text></svg>">
@@ -33,106 +33,126 @@
         <!-- Main Content -->
         <main class="main-content">
             <!-- Match Selector Section -->
-            <section class="section card">
-                <div class="section-header">
-                    <h2>🏆 Upcoming Matches</h2>
-                    <p>Select a match to get AI-powered betting insights</p>
-                </div>
-
-                <!-- Loading State -->
-                <div id="loading" class="loading-state">
-                    <div class="spinner"></div>
-                    <span>Loading matches...</span>
-                </div>
-
-                <!-- Match Selector -->
-                <div id="match-selector" class="match-selector" style="display: none;">
-                    <div class="dropdown-wrapper">
-                        <select id="matchSelect" class="match-dropdown">
-                            <option value="">Choose a match...</option>
-                        </select>
-                        <span class="dropdown-icon">⚽</span>
+            <section class="match-selector-section">
+                <h1 class="section-title">Premier League Analysis</h1>
+                <p class="section-subtitle">AI-powered betting insights for upcoming matches with real ESPN data</p>
+                
+                <div class="card">
+                    <div class="card-header">
+                        <h2 class="card-title">🏆 Upcoming Matches</h2>
+                        <p class="card-subtitle">Select a match to get professional betting analysis</p>
                     </div>
                     
-                    <div id="match-info" class="match-info" style="display: none;">
-                        <div class="match-details">
-                            <div class="teams">
-                                <span class="home-team" id="homeTeam"></span>
-                                <span class="vs">vs</span>
-                                <span class="away-team" id="awayTeam"></span>
-                            </div>
-                            <div class="match-meta">
-                                <span class="kickoff-time" id="kickoffTime"></span>
-                                <span class="time-until" id="timeUntil"></span>
+                    <div class="card-content">
+                        <!-- Loading State -->
+                        <div id="loading" class="loading-container">
+                            <div class="loading-spinner"></div>
+                            <p>Loading matches...</p>
+                            <div class="loading-steps">
+                                <div class="loading-step active">Fetching Premier League fixtures</div>
+                                <div class="loading-step">Checking data availability</div>
+                                <div class="loading-step">Preparing analysis</div>
                             </div>
                         </div>
-                        
-                        <button id="analyzeBtn" class="analyze-btn">
-                            <span class="btn-icon">📊</span>
-                            Analyze Match
-                        </button>
+
+                        <!-- Match Selector -->
+                        <div id="match-selector" class="match-selector" style="display: none;">
+                            <div class="select-wrapper">
+                                <select id="matchSelect" class="match-select">
+                                    <option value="">Choose a match...</option>
+                                </select>
+                            </div>
+
+                            <div id="match-info" class="match-info" style="display: none;">
+                                <div class="match-teams">
+                                    <div class="team">
+                                        <span class="team-name" id="homeTeam"></span>
+                                    </div>
+                                    <div class="vs-divider">
+                                        <div class="vs-text">VS</div>
+                                        <div class="match-time" id="kickoffTime"></div>
+                                        <div class="match-time" id="timeUntil"></div>
+                                    </div>
+                                    <div class="team">
+                                        <span class="team-name" id="awayTeam"></span>
+                                    </div>
+                                </div>
+
+                                <button id="analyzeBtn" class="analyze-btn">
+                                    <span>📊</span>
+                                    Analyze Match
+                                </button>
+                            </div>
+                        </div>
+
+                        <!-- No Matches State -->
+                        <div id="no-matches" class="no-matches" style="display: none;">
+                            <div class="no-matches-icon">⏰</div>
+                            <h3>No upcoming matches</h3>
+                            <p>Check back later for the next Premier League fixtures within 24 hours</p>
+                        </div>
                     </div>
                 </div>
+            </section>
 
-                <!-- No Matches State -->
-                <div id="no-matches" class="empty-state" style="display: none;">
-                    <div class="empty-icon">⏰</div>
-                    <h3>No upcoming matches</h3>
-                    <p>Check back later for the next Premier League fixtures</p>
+            <!-- Dynamic Stats Section -->
+            <section class="summary-stats" id="stats-section" style="display: none;">
+                <div class="summary-card">
+                    <div class="summary-number" id="totalOpportunities">-</div>
+                    <div class="summary-label">Total Opportunities</div>
+                </div>
+                <div class="summary-card">
+                    <div class="summary-number" id="highConfidenceBets">-</div>
+                    <div class="summary-label">High Confidence</div>
+                </div>
+                <div class="summary-card">
+                    <div class="summary-number" id="averageFinalScore">-</div>
+                    <div class="summary-label">Avg Final Score</div>
+                </div>
+                <div class="summary-card">
+                    <div class="summary-number" id="uniquePlayers">-</div>
+                    <div class="summary-label">Players Analyzed</div>
+                </div>
+                <div class="summary-card">
+                    <div class="summary-number" id="mlAccuracy">-</div>
+                    <div class="summary-label">ML Accuracy</div>
+                </div>
+                <div class="summary-card">
+                    <div class="summary-number" id="matchesAnalyzed">-</div>
+                    <div class="summary-label">Matches Today</div>
                 </div>
             </section>
 
             <!-- How It Works Section -->
-            <section class="section">
-                <div class="section-header">
-                    <h2>⚡ How It Works</h2>
+            <section class="card">
+                <div class="card-header">
+                    <h2 class="card-title">⚡ How It Works</h2>
+                    <p class="card-subtitle">Professional-grade analysis powered by machine learning</p>
                 </div>
                 
-                <div class="features-grid">
-                    <div class="feature-card">
-                        <div class="feature-icon">📡</div>
-                        <h3>Live Data</h3>
-                        <p>Real-time lineup and odds from ESPN & multiple sources</p>
-                    </div>
-                    
-                    <div class="feature-card">
-                        <div class="feature-icon">🧮</div>
-                        <h3>Smart Analysis</h3>
-                        <p>Poisson modeling with home/away & minutes adjustments</p>
-                    </div>
-                    
-                    <div class="feature-card">
-                        <div class="feature-icon">💰</div>
-                        <h3>Value Bets</h3>
-                        <p>Kelly criterion staking with edge detection</p>
-                    </div>
-                </div>
-            </section>
+                <div class="card-content">
+                    <div class="summary-stats">
+                        <div class="summary-card">
+                            <div class="summary-number">📡</div>
+                            <div class="summary-label">Live Data</div>
+                            <p style="margin-top: 8px; font-size: 14px; color: var(--primary-600);">Real-time lineups and stats from ESPN API</p>
+                        </div>
 
-            <!-- Stats Section -->
-            <section class="section">
-                <div class="stats-grid">
-                    <div class="stat-card">
-                        <div class="stat-value" id="totalMatches">-</div>
-                        <div class="stat-label">Matches Analyzed</div>
-                    </div>
-                    <div class="stat-card">
-                        <div class="stat-value">76%</div>
-                        <div class="stat-label">Avg ROI</div>
-                    </div>
-                    <div class="stat-card">
-                        <div class="stat-value">6</div>
-                        <div class="stat-label">Markets Covered</div>
+                        <div class="summary-card">
+                            <div class="summary-number">🧮</div>
+                            <div class="summary-label">ML Analysis</div>
+                            <p style="margin-top: 8px; font-size: 14px; color: var(--primary-600);">Self-learning model with Poisson distribution</p>
+                        </div>
+
+                        <div class="summary-card">
+                            <div class="summary-number">💰</div>
+                            <div class="summary-label">Value Detection</div>
+                            <p style="margin-top: 8px; font-size: 14px; color: var(--primary-600);">Final Score algorithm for profitable odds</p>
+                        </div>
                     </div>
                 </div>
             </section>
         </main>
-
-        <!-- Footer -->
-        <footer class="footer">
-            <p>🎯 <strong>Bettor</strong> - AI-Powered Football Betting Analysis</p>
-            <p>Always gamble responsibly. Past performance doesn't guarantee future results.</p>
-        </footer>
     </div>
 
     <!-- Analysis Loading Modal -->
@@ -142,19 +162,19 @@
                 <h3>🔍 Analyzing Match</h3>
             </div>
             <div class="modal-body">
-                <div class="analysis-progress">
-                    <div class="progress-spinner"></div>
-                    <div class="progress-steps">
-                        <div class="step active" id="step1">
-                            <span class="step-icon">📡</span>
-                            <span>Fetching lineups...</span>
+                <div class="loading-container">
+                    <div class="loading-spinner"></div>
+                    <div class="loading-steps">
+                        <div class="loading-step active" id="step1">
+                            <span>📡</span>
+                            <span>Fetching real lineups...</span>
                         </div>
-                        <div class="step" id="step2">
-                            <span class="step-icon">📊</span>
-                            <span>Calculating probabilities...</span>
+                        <div class="loading-step" id="step2">
+                            <span>📊</span>
+                            <span>Running ML model...</span>
                         </div>
-                        <div class="step" id="step3">
-                            <span class="step-icon">💰</span>
+                        <div class="loading-step" id="step3">
+                            <span>💰</span>
                             <span>Finding value bets...</span>
                         </div>
                     </div>
@@ -163,6 +183,25 @@
         </div>
     </div>
 
-    <script src="{{ url_for('static', filename='script.js') }}"></script>
+    <script src="/static/script.js?v={{ cache_bust }}"></script>
+    <script>
+        // Load dynamic stats on page load
+        document.addEventListener('DOMContentLoaded', function() {
+            fetch('/api/stats')
+                .then(response => response.json())
+                .then(data => {
+                    document.getElementById('totalOpportunities').textContent = data.total_opportunities || '-';
+                    document.getElementById('highConfidenceBets').textContent = data.high_confidence_bets || '-';
+                    document.getElementById('averageFinalScore').textContent = data.average_final_score ? data.average_final_score.toFixed(1) : '-';
+                    document.getElementById('uniquePlayers').textContent = data.unique_players_analyzed || '-';
+                    document.getElementById('mlAccuracy').textContent = data.ml_model_accuracy ? data.ml_model_accuracy.toFixed(1) + '%' : '-';
+                    document.getElementById('matchesAnalyzed').textContent = data.matches_analyzed_today || '-';
+                    document.getElementById('stats-section').style.display = 'grid';
+                })
+                .catch(error => {
+                    console.error('Error loading stats:', error);
+                });
+        });
+    </script>
 </body>
 </html>

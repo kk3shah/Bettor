@@ -1,0 +1,63 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Test Bettor Website</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 20px; }
+        .test { margin: 10px 0; padding: 10px; border: 1px solid #ccc; }
+        .success { background: #d4edda; border-color: #c3e6cb; }
+        .error { background: #f8d7da; border-color: #f5c6cb; }
+    </style>
+</head>
+<body>
+    <h1>🎯 Bettor Website Test</h1>
+    <div id="results"></div>
+
+    <script>
+        async function testAPI() {
+            const results = document.getElementById('results');
+            
+            // Test 1: Matches API
+            try {
+                const matchesResponse = await fetch('http://localhost:5000/api/matches');
+                const matches = await matchesResponse.json();
+                results.innerHTML += `<div class="test success">✅ Matches API: ${matches.length} matches found</div>`;
+                
+                if (matches.length > 0) {
+                    const match = matches[0];
+                    results.innerHTML += `<div class="test success">✅ Sample match: ${match.home_team} vs ${match.away_team} (${match.time_until})</div>`;
+                    
+                    // Test 2: Analyze API
+                    try {
+                        const analyzeResponse = await fetch(`http://localhost:5000/api/analyze?home_team=${encodeURIComponent(match.home_team)}&away_team=${encodeURIComponent(match.away_team)}`);
+                        const analysis = await analyzeResponse.json();
+                        const bets = analysis.opportunities || analysis.all_bets || [];
+                        results.innerHTML += `<div class="test success">✅ Analysis API: ${bets.length} betting opportunities found</div>`;
+                        
+                        if (bets.length > 0) {
+                            const teamProps = bets.filter(bet => bet.is_team_prop);
+                            const playerProps = bets.filter(bet => !bet.is_team_prop);
+                            results.innerHTML += `<div class="test success">✅ Team props: ${teamProps.length}, Player props: ${playerProps.length}</div>`;
+                        }
+                    } catch (error) {
+                        results.innerHTML += `<div class="test error">❌ Analysis API failed: ${error.message}</div>`;
+                    }
+                }
+            } catch (error) {
+                results.innerHTML += `<div class="test error">❌ Matches API failed: ${error.message}</div>`;
+            }
+            
+            // Test 3: Stats API
+            try {
+                const statsResponse = await fetch('http://localhost:5000/api/stats');
+                const stats = await statsResponse.json();
+                results.innerHTML += `<div class="test success">✅ Stats API: ${stats.total_opportunities} total opportunities, ${stats.ml_model_accuracy}% ML accuracy</div>`;
+            } catch (error) {
+                results.innerHTML += `<div class="test error">❌ Stats API failed: ${error.message}</div>`;
+            }
+        }
+        
+        testAPI();
+    </script>
+</body>
+</html>

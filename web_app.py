@@ -5,7 +5,7 @@
 from flask import Flask, render_template, jsonify, request
 import sys
 import os
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 import json
 import sqlite3
 import threading
@@ -15,6 +15,8 @@ import subprocess
 import logging
 from pathlib import Path
 import csv
+import requests
+import pytz
 
 # Add project root to path
 sys.path.append(os.path.dirname(os.path.abspath(__file__)))
@@ -48,7 +50,61 @@ class BettorWebService:
     
     def __init__(self):
         self.scraper = LiveDataScraper()
-        self.db = BettorDatabase() if BettorDatabase else None
+        self.data_dir = Path("data")
+        self.data_dir.mkdir(exist_ok=True)
+    
+    def get_user_timezone(self, user_ip=None):
+        """Get user's timezone based on IP geolocation"""
+        try:
+            if not user_ip or user_ip == '127.0.0.1' or user_ip.startswith('192.168.') or user_ip.startswith('10.0.'):
+                # For local/development, default to UTC
+                return pytz.UTC
+            
+            # Use ipapi.co for free IP geolocation
+            response = requests.get(f'https://ipapi.co/{user_ip}/timezone/', timeout=3)
+            if response.status_code == 200:
+                timezone_name = response.text.strip()
+                # Validate timezone name
+                if timezone_name and timezone_name != 'Undefined' and '/' in timezone_name:
+                    return pytz.timezone(timezone_name)
+        except Exception as e:
+            print(f"⚠️ Error getting timezone for IP {user_ip}: {e}")
+        
+        # Fallback to UTC
+        return pytz.UTC
+    
+    def format_time_for_user(self, utc_time, user_timezone):
+        """Convert UTC time to user's local time and format it"""
+        try:
+            # Convert UTC to user's timezone
+            local_time = utc_time.replace(tzinfo=pytz.UTC).astimezone(user_timezone)
+            
+            # Calculate time until match
+            now_utc = datetime.now(pytz.UTC)
+            now_local = now_utc.astimezone(user_timezone)
+            
+            time_diff = local_time - now_local
+            total_seconds = time_diff.total_seconds()
+            
+            if total_seconds < 0:
+                return "Started", local_time.strftime('%H:%M')
+            elif total_seconds < 3600:  # Less than 1 hour
+                minutes = int(total_seconds / 60)
+                return f"in {minutes}m", local_time.strftime('%H:%M')
+            elif total_seconds < 86400:  # Less than 24 hours
+                hours = int(total_seconds / 3600)
+                minutes = int((total_seconds % 3600) / 60)
+                if minutes > 0:
+                    return f"in {hours}h {minutes}m", local_time.strftime('%H:%M')
+                else:
+                    return f"in {hours}h", local_time.strftime('%H:%M')
+            else:  # More than 24 hours
+                days = int(total_seconds / 86400)
+                return f"in {days}d", local_time.strftime('%H:%M')
+                
+        except Exception as e:
+            print(f"⚠️ Error formatting time: {e}")
+            return "Unknown", "Unknown"
     
     def get_upcoming_matches(self, hours_ahead=24):
         """Get upcoming matches - CSV FIRST (instant), then generate if needed."""
@@ -354,9 +410,8 @@ class BettorWebService:
                                             final_score = analysis_data.get('final_score', 50)
                                             model_prob = analysis_data.get('model_prob', 0.5)
                                             
-                                            # FILTER: Only show bets with Final Score > 60 (good opportunities)
-                                            if final_score < 60:
-                                                continue  # Skip low-quality bets
+                                            # Show all bets - let users decide based on final_score
+                                            # No filtering by final_score to show all available opportunities
                                             
                                             # Check if this is a team prop or player prop
                                             is_team_prop = analysis_data.get('prop_type') == 'team'
@@ -366,10 +421,10 @@ class BettorWebService:
                                             if rate_per_game <= 0:
                                                 continue  # Skip players with 0 average for this metric
                                             
-                                            # Calculate confidence based on Final Score
-                                            if final_score >= 80:
+                                            # Calculate confidence based on Final Score (realistic thresholds)
+                                            if final_score >= 60:
                                                 confidence = 'High'
-                                            elif final_score >= 70:
+                                            elif final_score >= 45:
                                                 confidence = 'Medium'
                                             else:
                                                 confidence = 'Low'
@@ -474,8 +529,8 @@ class BettorWebService:
                 },
                 "summary": {
                     "total_opportunities": len(matching_analysis),
-                    "high_confidence_bets": len([bet for bet in matching_analysis if bet.get('final_score', 0) >= 80]),
-                    "medium_confidence_bets": len([bet for bet in matching_analysis if 70 <= bet.get('final_score', 0) < 80]),
+                    "high_confidence_bets": len([bet for bet in matching_analysis if bet.get('final_score', 0) >= 60]),
+                    "medium_confidence_bets": len([bet for bet in matching_analysis if 45 <= bet.get('final_score', 0) < 60]),
                     "data_quality": "100% Real ESPN Data",
                     "fake_data": False
                 },
@@ -542,40 +597,47 @@ bettor_service = BettorWebService()
 @app.route('/')
 def index():
     """Main page with match selector."""
-    return render_template('index.html')
+    import random
+    cache_bust = random.randint(1000, 9999)
+    return render_template('index.html', cache_bust=cache_bust)
 
 @app.route('/api/matches')
 def get_matches():
-    """API endpoint to get upcoming matches."""
+    """API endpoint to get upcoming matches with proper timezone handling."""
     hours = request.args.get('hours', 8, type=int)
     raw_matches = bettor_service.get_upcoming_matches(hours)
     
-    # Transform CSV format to frontend format
+    # Get user's IP and timezone
+    user_ip = request.headers.get('X-Forwarded-For', request.remote_addr)
+    if user_ip and ',' in user_ip:
+        user_ip = user_ip.split(',')[0].strip()
+    
+    user_timezone = bettor_service.get_user_timezone(user_ip)
+    print(f"🌍 User IP: {user_ip}, Timezone: {user_timezone}")
+    
+    # Transform CSV format to frontend format with proper timezone
     formatted_matches = []
     for match in raw_matches:
         try:
-            from datetime import datetime
-            kickoff_dt = datetime.fromisoformat(match['kickoff_time'])
-            now = datetime.now()
+            # Parse kickoff time as UTC
+            kickoff_dt = datetime.fromisoformat(match['kickoff_time'].replace('Z', '+00:00'))
+            if kickoff_dt.tzinfo is None:
+                kickoff_dt = kickoff_dt.replace(tzinfo=pytz.UTC)
             
-            # Calculate time until match
-            time_diff = kickoff_dt - now
-            hours_until = time_diff.total_seconds() / 3600
+            # Format time for user's timezone
+            time_until, local_kickoff = bettor_service.format_time_for_user(kickoff_dt, user_timezone)
             
-            if hours_until > 0:  # Only future matches
-                if hours_until < 1:
-                    time_until = f"{int(time_diff.total_seconds() / 60)} minutes"
-                else:
-                    time_until = f"{hours_until:.1f} hours"
-                
+            # Only include future matches
+            now_utc = datetime.now(pytz.UTC)
+            if kickoff_dt > now_utc:
                 formatted_match = {
                     'id': match['match_id'],
                     'home_team': match['home_team'],
                     'away_team': match['away_team'],
                     'league': match['league'],
-                    'kickoff': kickoff_dt.strftime('%H:%M'),
+                    'kickoff': local_kickoff,  # Local time for user
                     'kickoff_time': match['kickoff_time'],
-                    'time_until': time_until,
+                    'time_until': time_until,  # Properly calculated time until
                     'venue': f"{match['home_team']} Stadium"
                 }
                 formatted_matches.append(formatted_match)
@@ -636,10 +698,10 @@ def get_stats():
             final_score = analysis.get('final_score', 50)
             final_scores.append(final_score)
             
-            # Determine confidence based on Final Score
-            if final_score >= 80:
+            # Determine confidence based on Final Score (realistic thresholds)
+            if final_score >= 60:
                 confidence_counts['High'] += 1
-            elif final_score >= 70:
+            elif final_score >= 45:
                 confidence_counts['Medium'] += 1
             else:
                 confidence_counts['Low'] += 1

@@ -212,6 +212,24 @@ class BettorAnalysis {
             const betElement = this.createBetCard(bet, true);
             container.appendChild(betElement);
         });
+
+        // Auto-calculate profit for all loaded bet cards
+        setTimeout(() => {
+            document.querySelectorAll('.odds-input').forEach(input => {
+                if (input.value && parseFloat(input.value) > 1) {
+                    // Extract model probability from the oninput attribute
+                    const onInputAttr = input.getAttribute('oninput');
+                    if (onInputAttr) {
+                        const match = onInputAttr.match(/updateProfit\(this,\s*([0-9.]+)\)/);
+                        if (match) {
+                            const modelProb = parseFloat(match[1]);
+                            updateProfit(input, modelProb);
+                        }
+                    }
+                }
+            });
+            console.log('🔄 Auto-calculated profit for all bet cards');
+        }, 500);
     }
 
     createBetCard(bet, detailed = false) {
@@ -285,12 +303,26 @@ class BettorAnalysis {
                 
                 <div class="bet-threshold">
                     <div class="threshold-info">
-                        <div class="threshold-label">💰 Profitable if odds ≥</div>
-                        <div class="odds-input-container">
-                            <input type="number" class="odds-input" value="${bet.min_profitable_odds_decimal}" step="0.01" min="1.01" onchange="updateProfit(this, ${bet.model_probability_percent})">
-                            <div class="profit-display">
-                                <span class="profit-value">+15%</span>
-                                <span class="profit-label">Expected ROI</span>
+                        <div class="profitable-section">
+                            <div class="profitable-title">
+                                <span>💰</span>
+                                <span>Expected Value Calculator</span>
+                            </div>
+                            <div class="odds-calculator">
+                                <div class="odds-input-group">
+                                    <span class="odds-input-label">Your Odds:</span>
+                                    <input type="number" 
+                                           class="odds-input" 
+                                           value="${bet.min_profitable_odds_decimal}" 
+                                           step="0.01" 
+                                           min="1.01"
+                                           oninput="updateProfit(this, ${bet.model_probability_percent})"
+                                           onload="updateProfit(this, ${bet.model_probability_percent})">
+                                </div>
+                                <div class="profit-display">
+                                    <div class="profit-value" style="color: var(--accent-emerald);">+$0.00</div>
+                                    <div class="profit-label">Expected Value</div>
+                                </div>
                             </div>
                         </div>
                     </div>
@@ -464,34 +496,42 @@ window.BettorUtils = window.BettorUtils || {
     }
 };
 
-// Dynamic profit calculation
+// Professional profit calculation with proper expected value
 function updateProfit(input, modelProbability) {
     const userOdds = parseFloat(input.value);
-    const profitDisplay = input.parentElement.querySelector('.profit-value');
-    const profitLabel = input.parentElement.querySelector('.profit-label');
+    const profitDisplay = input.parentElement.parentElement.querySelector('.profit-value');
+    const profitLabel = input.parentElement.parentElement.querySelector('.profit-label');
+    
+    if (!profitDisplay || !profitLabel) {
+        console.error('Could not find profit display elements');
+        return;
+    }
     
     if (userOdds && userOdds > 1) {
         const stake = 10; // $10 stake
         const modelProbDecimal = modelProbability / 100; // Convert percentage to decimal
         
-        // Calculate expected return on $10 stake
-        const potentialWin = stake * (userOdds - 1); // Profit if bet wins
-        const expectedReturn = (modelProbDecimal * potentialWin) - ((1 - modelProbDecimal) * stake);
+        // Expected Value calculation: (Probability × Payout) - Stake
+        const payout = stake * userOdds; // Total payout if bet wins
+        const expectedValue = (modelProbDecimal * payout) - stake;
         
-        if (expectedReturn > 0) {
-            profitDisplay.textContent = `+$${expectedReturn.toFixed(2)}`;
-            profitDisplay.style.color = 'var(--success-color)';
-            profitLabel.textContent = 'Expected Return ($10 stake)';
+        if (expectedValue > 0) {
+            profitDisplay.textContent = `+$${expectedValue.toFixed(2)}`;
+            profitDisplay.style.color = '#10B981'; // Professional green
         } else {
-            profitDisplay.textContent = `-$${Math.abs(expectedReturn).toFixed(2)}`;
-            profitDisplay.style.color = 'var(--error-color)';
-            profitLabel.textContent = 'Expected Loss ($10 stake)';
+            profitDisplay.textContent = `$${expectedValue.toFixed(2)}`;
+            profitDisplay.style.color = '#EF4444'; // Professional red
         }
         
-        profitDisplay.style.display = 'block';
+        profitLabel.textContent = 'Expected Value ($10 stake)';
+        profitDisplay.parentElement.style.display = 'flex';
     } else {
-        profitDisplay.style.display = 'none';
+        profitDisplay.textContent = '+$0.00';
+        profitDisplay.style.color = '#6B7280';
+        profitLabel.textContent = 'Enter odds to calculate';
     }
+    
+    console.log(`💰 Updated profit: ${profitDisplay.textContent} for odds ${userOdds}`);
 }
 
 console.log('📊 Analysis JavaScript loaded');
