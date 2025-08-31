@@ -12,3 +12,7 @@ schedule==1.2.0
 scikit-learn==1.3.0
 joblib==1.3.2
 pytz==2023.3
+# WhoScored Pipeline Dependencies
+playwright>=1.40.0
+tenacity>=8.2.0
+orjson>=3.9.0

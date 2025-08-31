@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 """
 Use REAL ESPN API to get current player rosters - NO FAKE DATA
+Enhanced with WhoScored integration for better player statistics
 """
 import csv
 import json
@@ -10,6 +11,15 @@ from datetime import datetime
 from app.data.adapters.live_scraper import LiveDataScraper
 from simple_ml_model import ml_model
 import time
+
+# Import WhoScored integration
+try:
+    from ws_integration import get_whoscored_player_stats, get_whoscored_analysis
+    WHOSCORED_AVAILABLE = True
+    print("✅ WhoScored integration available")
+except ImportError as e:
+    print(f"⚠️ WhoScored integration not available: {e}")
+    WHOSCORED_AVAILABLE = False
 
 def get_realistic_player_stats_for_position(position):
     """Generate realistic player statistics for a specific position."""
@@ -136,7 +146,20 @@ def get_real_players_from_espn(scraper, team_name):
         return []
 
 def generate_analysis_for_match_real_espn(scraper, match_id, home_team, away_team):
-    """Generate analysis using CONFIRMED LINEUPS from ESPN API."""
+    """Generate analysis using CONFIRMED LINEUPS from ESPN API enhanced with WhoScored."""
+    
+    # Try WhoScored first for comprehensive analysis
+    if WHOSCORED_AVAILABLE:
+        try:
+            print(f"   🌐 Attempting WhoScored analysis for {home_team} vs {away_team}...")
+            ws_analysis = get_whoscored_analysis(home_team, away_team)
+            if ws_analysis:
+                print(f"✅ Got {len(ws_analysis)} opportunities from WhoScored")
+                return ws_analysis
+            else:
+                print(f"⚠️ No WhoScored data available, falling back to ESPN")
+        except Exception as e:
+            print(f"⚠️ WhoScored analysis failed: {e}, falling back to ESPN")
     
     # Try to get CONFIRMED starting lineups first
     print(f"   📋 Getting confirmed lineups for {home_team} vs {away_team}...")
@@ -176,8 +199,22 @@ def generate_analysis_for_match_real_espn(scraper, match_id, home_team, away_tea
         
         full_position = position_mapping.get(real_position, 'Midfielder')
         
-        # Use INDIVIDUAL ESPN player stats (not position templates!)
-        # These come directly from the confirmed lineup with real ESPN data
+        # Try to get WhoScored stats first, then fall back to ESPN
+        ws_stats = None
+        if WHOSCORED_AVAILABLE:
+            try:
+                player_name = player.get('player_name', '')
+                team_name = home_team if player.get('is_home') else away_team
+                ws_stats = get_whoscored_player_stats(player_name, team_name)
+                if ws_stats:
+                    print(f"   ✅ Got WhoScored stats for {player_name}")
+                    # Update player with WhoScored stats
+                    player.update(ws_stats)
+            except Exception as e:
+                print(f"   ⚠️ WhoScored stats failed for {player.get('player_name', 'Unknown')}: {e}")
+        
+        # Use INDIVIDUAL player stats (WhoScored preferred, ESPN fallback)
+        # These come from real data sources - NO FAKE DATA
         
         # Define props based on INDIVIDUAL player stats
         if full_position == 'Goalkeeper':
