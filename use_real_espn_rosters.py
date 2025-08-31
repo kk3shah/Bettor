@@ -1,25 +1,17 @@
 #!/usr/bin/env python3
 """
-Use REAL ESPN API to get current player rosters - NO FAKE DATA
-Enhanced with WhoScored integration for better player statistics
+WhoScored-only betting analysis system.
+If no WhoScored data available, returns "no data found".
 """
 import csv
 import json
-import random
 from pathlib import Path
 from datetime import datetime
-from app.data.adapters.live_scraper import LiveDataScraper
 from simple_ml_model import ml_model
 import time
 
-# Import WhoScored integration
-try:
-    from ws_integration import get_whoscored_player_stats, get_whoscored_analysis
-    WHOSCORED_AVAILABLE = True
-    print("✅ WhoScored integration available")
-except ImportError as e:
-    print(f"⚠️ WhoScored integration not available: {e}")
-    WHOSCORED_AVAILABLE = False
+# WhoScored integration (required)
+from ws_integration import get_whoscored_analysis
 
 def get_realistic_player_stats_for_position(position):
     """Generate realistic player statistics for a specific position."""
@@ -145,25 +137,22 @@ def get_real_players_from_espn(scraper, team_name):
         print(f"ERROR: Error getting ESPN data for {team_name}: {e}")
         return []
 
-def generate_analysis_for_match_real_espn(scraper, match_id, home_team, away_team):
-    """Generate analysis using CONFIRMED LINEUPS from ESPN API enhanced with WhoScored."""
+def generate_analysis_for_match_whoscored_only(match_id, home_team, away_team):
+    """Generate analysis using WhoScored data only. Returns empty if no data."""
     
-    # Try WhoScored first for comprehensive analysis
-    if WHOSCORED_AVAILABLE:
-        try:
-            print(f"   🌐 Attempting WhoScored analysis for {home_team} vs {away_team}...")
-            ws_analysis = get_whoscored_analysis(home_team, away_team)
-            if ws_analysis:
-                print(f"✅ Got {len(ws_analysis)} opportunities from WhoScored")
-                return ws_analysis
-            else:
-                print(f"⚠️ No WhoScored data available, falling back to ESPN")
-        except Exception as e:
-            print(f"⚠️ WhoScored analysis failed: {e}, falling back to ESPN")
+    print(f"   🌐 Getting WhoScored analysis for {home_team} vs {away_team}...")
     
-    # Try to get CONFIRMED starting lineups first
-    print(f"   📋 Getting confirmed lineups for {home_team} vs {away_team}...")
-    home_players = scraper.get_confirmed_lineup(home_team, match_id)
+    try:
+        ws_analysis = get_whoscored_analysis(home_team, away_team)
+        if ws_analysis:
+            print(f"✅ Got {len(ws_analysis)} opportunities from WhoScored")
+            return ws_analysis
+        else:
+            print(f"❌ No WhoScored data available for {home_team} vs {away_team}")
+            return []
+    except Exception as e:
+        print(f"❌ WhoScored analysis failed: {e}")
+        return []
     away_players = scraper.get_confirmed_lineup(away_team, match_id)
     
     # Set home/away flags

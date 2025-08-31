@@ -476,46 +476,67 @@ class BettorWebService:
         return False
     
     def run_match_analysis(self, home_team, away_team):
-        """Get analysis for selected match - FIRST check if match exists in ESPN API."""
+        """Get analysis for selected match using WhoScored data only."""
         try:
             # Decode HTML entities in team names (e.g., &amp; -> &)
             import html
             home_team = html.unescape(home_team)
             away_team = html.unescape(away_team)
             
-            print(f"🔍 Looking for analysis: {home_team} vs {away_team}...")
+            print(f"🔍 Getting WhoScored analysis: {home_team} vs {away_team}...")
             
-            # STEP 1: Verify this match exists in current ESPN API data
-            current_matches = self.get_upcoming_matches(24)
-            match_found_in_espn = False
-            espn_match_id = None
+            # Use WhoScored-only analysis
+            from whoscored_only_analysis import generate_analysis_for_match_whoscored_only
             
-            for match in current_matches:
-                if (match.get('home_team') == home_team and match.get('away_team') == away_team):
-                    match_found_in_espn = True
-                    espn_match_id = match.get('id')
-                    print(f"✅ Match found in ESPN API with ID: {espn_match_id}")
-                    break
+            match_id = f"ws_{home_team}_{away_team}"
+            analysis_data = generate_analysis_for_match_whoscored_only(match_id, home_team, away_team)
             
-            if not match_found_in_espn:
-                print(f"❌ Match {home_team} vs {away_team} not found in current ESPN API data")
-                available_matches = [f"{m.get('home_team')} vs {m.get('away_team')}" for m in current_matches[:3]]
-                return {"error": f"Match not available in current ESPN data. Available matches: {available_matches}"}
+            if not analysis_data:
+                print(f"❌ No WhoScored data available for {home_team} vs {away_team}")
+                return {"error": "No data found for this match"}
             
-            # STEP 2: Get analysis from CSV file directly
-            import csv
-            import json
-            from pathlib import Path
+            # Convert WhoScored analysis to frontend format
+            opportunities = []
+            for analysis in analysis_data:
+                # Calculate profitable odds
+                model_prob = analysis.get('model_prob', 0.5)
+                fair_odds_decimal = 1 / model_prob if model_prob > 0 else 2.0
+                min_profitable_decimal = fair_odds_decimal * 1.05
+                
+                # Convert to American odds
+                if min_profitable_decimal >= 2.0:
+                    min_profitable_american = f"+{int((min_profitable_decimal - 1) * 100)}"
+                else:
+                    min_profitable_american = f"-{int(100 / (min_profitable_decimal - 1))}"
+                
+                bet_obj = {
+                    'player': analysis.get('player_name', 'Unknown'),
+                    'bet_description': f"{analysis.get('prop_type', 'Unknown')}",
+                    'market': analysis.get('prop_type', 'Unknown'),
+                    'model_prob': model_prob,
+                    'model_probability_percent': round(model_prob * 100, 1),
+                    'final_score': round(analysis.get('final_score', 50), 1),
+                    'final_score_percent': round(analysis.get('final_score', 50), 1),
+                    'confidence': analysis.get('confidence', 'Medium'),
+                    'fair_odds_decimal': round(fair_odds_decimal, 2),
+                    'min_profitable_odds_decimal': round(min_profitable_decimal, 2),
+                    'min_profitable_odds_american': min_profitable_american,
+                    'avg_per_game': round(analysis.get('rate_per_game', 0), 2),
+                    'source': analysis.get('source', 'WhoScored'),
+                    'reasoning': f"Final Score: {round(analysis.get('final_score', 50), 1)} | Model: {round(model_prob * 100, 1)}% | Source: {analysis.get('source', 'WhoScored')}"
+                }
+                opportunities.append(bet_obj)
             
-            analysis_file = Path("data/analysis.csv")
-            if not analysis_file.exists():
-                print("❌ No analysis.csv file found - generating analysis on demand...")
-                return self._generate_live_analysis(home_team, away_team, espn_match_id)
+            print(f"✅ Returning {len(opportunities)} WhoScored opportunities")
+            return {"opportunities": opportunities}
             
-            # Read analysis CSV and find matching entries
-            matching_analysis = []
-            
-            with open(analysis_file, 'r', encoding='utf-8') as f:
+        except Exception as e:
+            print(f"❌ Analysis error: {e}")
+            import traceback
+            traceback.print_exc()
+            return {"error": f"Analysis failed: {str(e)}"}
+
+    def _generate_live_analysis(self, home_team, away_team, espn_match_id):
                 reader = csv.DictReader(f)
                 for row in reader:
                     # Parse the analysis_data JSON
