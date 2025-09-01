@@ -301,17 +301,10 @@ def test_openfootball_scraper():
         for fixture in fixtures[:3]:
             print(f"  - {fixture['home_team']} vs {fixture['away_team']} on {fixture['kickoff_utc'].strftime('%Y-%m-%d')}")
     else:
-        print("\n⚠️ No upcoming fixtures found, generating sample fixture for demo...")
-        # Generate a sample fixture for demonstration
-        sample_fixture = {
-            'home_team': 'Manchester City',
-            'away_team': 'Arsenal',
-            'kickoff_utc': datetime.now() + timedelta(hours=2),
-            'source': 'demo'
-        }
-        fixtures = [sample_fixture]
+        print("\n❌ No real fixtures found - no data sources available")
+        fixtures = []  # Return empty list - NO FAKE DATA
     
-    # Test 2: Generate analysis
+    # Test 2: Generate analysis only if real fixtures exist
     if fixtures:
         first_fixture = fixtures[0]
         home_team = first_fixture['home_team']
@@ -326,8 +319,11 @@ def test_openfootball_scraper():
                 print(f"  - {opp['player_name']}: {opp['prop_type']} ({opp['confidence']} confidence, {opp['expected_value']} EV)")
         else:
             print("❌ No analysis generated")
+    else:
+        print("\n❌ No analysis possible - no real fixtures available")
+        analysis = []
     
-    return fixtures, analysis if 'analysis' in locals() else []
+    return fixtures, analysis
 
 if __name__ == "__main__":
     test_openfootball_scraper()

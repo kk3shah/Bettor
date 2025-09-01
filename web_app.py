@@ -22,30 +22,53 @@ def analysis():
 
 @app.route('/api/matches')
 def get_matches():
-    """Get current matches."""
+    """Get current matches from real data sources."""
     try:
-        # Sample matches for demo
-        now = datetime.now()
-        matches = [
-            {
-                "id": "1",
-                "home_team": "Manchester City",
-                "away_team": "Arsenal", 
-                "kickoff": (now + timedelta(hours=2)).isoformat(),
-                "time_until": "2 hours"
-            },
-            {
-                "id": "2", 
-                "home_team": "Liverpool",
-                "away_team": "Chelsea",
-                "kickoff": (now + timedelta(hours=4)).isoformat(),
-                "time_until": "4 hours"
-            }
-        ]
+        from openfootball_scraper import OpenFootballScraper
+        
+        print("🔍 Fetching real Premier League fixtures...")
+        scraper = OpenFootballScraper()
+        real_fixtures = scraper.get_premier_league_fixtures()
+        
+        if not real_fixtures:
+            print("❌ No real fixtures found - all data sources unavailable")
+            return jsonify({
+                "matches": [],
+                "total_opportunities": 0,
+                "ml_model_accuracy": 0,
+                "message": "No real data available - all sources blocked/unavailable",
+                "error": "Real data sources (WhoScored, football-data.org, openfootball) are currently unavailable"
+            })
+        
+        # Convert to API format
+        matches = []
+        for i, fixture in enumerate(real_fixtures):
+            # Calculate time until kickoff
+            now = datetime.now()
+            kickoff = fixture['kickoff_utc']
+            time_diff = kickoff - now
+            
+            if time_diff.total_seconds() > 0:
+                hours = int(time_diff.total_seconds() // 3600)
+                time_until = f"{hours} hours" if hours > 0 else "Starting soon"
+            else:
+                time_until = "Live"
+            
+            matches.append({
+                "id": str(i + 1),
+                "home_team": fixture['home_team'],
+                "away_team": fixture['away_team'],
+                "kickoff": kickoff.isoformat(),
+                "time_until": time_until
+            })
+        
+        total_opportunities = len(matches) * 18  # 18 per match
+        
+        print(f"✅ Found {len(matches)} real fixtures")
         
         return jsonify({
             "matches": matches,
-            "total_opportunities": 36,  # 18 per match
+            "total_opportunities": total_opportunities,
             "ml_model_accuracy": 85.5
         })
         
