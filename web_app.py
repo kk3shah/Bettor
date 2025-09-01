@@ -77,15 +77,27 @@ def get_matches():
 
 @app.route('/api/analyze')
 def analyze_match():
-    """Analyze a specific match using real data."""
+    """Analyze a specific match using football.db real data."""
     try:
         home_team = request.args.get('home_team', 'Manchester City')
         away_team = request.args.get('away_team', 'Arsenal')
         
-        print(f"🎯 Analyzing {home_team} vs {away_team} with real data...")
+        print(f"🎯 Analyzing {home_team} vs {away_team} with football.db...")
         
-        # Get real analysis
-        analysis = get_whoscored_analysis(home_team, away_team)
+        # Get real analysis from football.db SQLite database
+        from footballdb_scraper import FootballDBScraper
+        scraper = FootballDBScraper()
+        
+        # Ensure database is populated
+        if not os.path.exists(scraper.db_path):
+            print("📥 First-time setup: Populating football.db...")
+            scraper.populate_database()
+        
+        # Get player props for both teams
+        home_props = scraper.get_player_props(home_team)
+        away_props = scraper.get_player_props(away_team)
+        
+        analysis = home_props + away_props
         
         if not analysis:
             return jsonify({"error": "No real data available for this match"}), 404
@@ -118,11 +130,13 @@ def analyze_match():
             "opportunities": opportunities,
             "match_info": {
                 "home_team": home_team,
-                "away_team": away_team
+                "away_team": away_team,
+                "data_source": "Football.db SQLite Database",
+                "generated_at": datetime.now().isoformat()
             },
             "summary": {
                 "total_opportunities": len(opportunities),
-                "data_quality": "100% Real Data"
+                "data_quality": "100% Real Data from Football.db"
             }
         })
         
