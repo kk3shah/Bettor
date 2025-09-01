@@ -112,51 +112,75 @@ class FootballDBScraper:
         print("✅ Database populated with real data")
     
     def _load_english_teams(self):
-        """Load English Premier League teams."""
-        print("🏴󠁧󠁢󠁥󠁮󠁧󠁿 Loading English teams...")
+        """Load teams from major European leagues."""
+        print("🌍 Loading teams from major European leagues...")
         
-        # Premier League teams from openfootball
-        premier_league_teams = [
-            {'key': 'arsenal', 'title': 'Arsenal', 'code': 'ARS'},
-            {'key': 'chelsea', 'title': 'Chelsea', 'code': 'CHE'},
-            {'key': 'liverpool', 'title': 'Liverpool', 'code': 'LIV'},
-            {'key': 'mancity', 'title': 'Manchester City', 'code': 'MCI'},
-            {'key': 'manutd', 'title': 'Manchester United', 'code': 'MUN'},
-            {'key': 'tottenham', 'title': 'Tottenham Hotspur', 'code': 'TOT'},
-            {'key': 'newcastle', 'title': 'Newcastle United', 'code': 'NEW'},
-            {'key': 'astonvilla', 'title': 'Aston Villa', 'code': 'AVL'},
-            {'key': 'brighton', 'title': 'Brighton & Hove Albion', 'code': 'BHA'},
-            {'key': 'westham', 'title': 'West Ham United', 'code': 'WHU'},
-            {'key': 'everton', 'title': 'Everton', 'code': 'EVE'},
-            {'key': 'crystalpalace', 'title': 'Crystal Palace', 'code': 'CRY'},
-            {'key': 'fulham', 'title': 'Fulham', 'code': 'FUL'},
-            {'key': 'bournemouth', 'title': 'AFC Bournemouth', 'code': 'BOU'},
-            {'key': 'wolves', 'title': 'Wolverhampton Wanderers', 'code': 'WOL'},
-            {'key': 'nottmforest', 'title': 'Nottingham Forest', 'code': 'NFO'},
-            {'key': 'brentford', 'title': 'Brentford', 'code': 'BRE'},
-            {'key': 'leicester', 'title': 'Leicester City', 'code': 'LEI'},
-            {'key': 'ipswich', 'title': 'Ipswich Town', 'code': 'IPS'},
-            {'key': 'southampton', 'title': 'Southampton', 'code': 'SOU'}
+        # All major league teams
+        all_teams = [
+            # Premier League
+            {'key': 'arsenal', 'title': 'Arsenal', 'code': 'ARS', 'country': 'en', 'league': 'Premier League'},
+            {'key': 'chelsea', 'title': 'Chelsea', 'code': 'CHE', 'country': 'en', 'league': 'Premier League'},
+            {'key': 'liverpool', 'title': 'Liverpool', 'code': 'LIV', 'country': 'en', 'league': 'Premier League'},
+            {'key': 'mancity', 'title': 'Manchester City', 'code': 'MCI', 'country': 'en', 'league': 'Premier League'},
+            {'key': 'manutd', 'title': 'Manchester United', 'code': 'MUN', 'country': 'en', 'league': 'Premier League'},
+            {'key': 'tottenham', 'title': 'Tottenham Hotspur', 'code': 'TOT', 'country': 'en', 'league': 'Premier League'},
+            
+            # La Liga
+            {'key': 'realmadrid', 'title': 'Real Madrid', 'code': 'RMA', 'country': 'es', 'league': 'La Liga'},
+            {'key': 'barcelona', 'title': 'Barcelona', 'code': 'BAR', 'country': 'es', 'league': 'La Liga'},
+            {'key': 'atletico', 'title': 'Atletico Madrid', 'code': 'ATM', 'country': 'es', 'league': 'La Liga'},
+            {'key': 'sevilla', 'title': 'Sevilla', 'code': 'SEV', 'country': 'es', 'league': 'La Liga'},
+            
+            # Bundesliga
+            {'key': 'bayern', 'title': 'Bayern Munich', 'code': 'BAY', 'country': 'de', 'league': 'Bundesliga'},
+            {'key': 'dortmund', 'title': 'Borussia Dortmund', 'code': 'BVB', 'country': 'de', 'league': 'Bundesliga'},
+            {'key': 'leipzig', 'title': 'RB Leipzig', 'code': 'RBL', 'country': 'de', 'league': 'Bundesliga'},
+            {'key': 'leverkusen', 'title': 'Bayer Leverkusen', 'code': 'B04', 'country': 'de', 'league': 'Bundesliga'},
+            
+            # Serie A
+            {'key': 'juventus', 'title': 'Juventus', 'code': 'JUV', 'country': 'it', 'league': 'Serie A'},
+            {'key': 'milan', 'title': 'AC Milan', 'code': 'MIL', 'country': 'it', 'league': 'Serie A'},
+            {'key': 'inter', 'title': 'Inter Milan', 'code': 'INT', 'country': 'it', 'league': 'Serie A'},
+            {'key': 'napoli', 'title': 'Napoli', 'code': 'NAP', 'country': 'it', 'league': 'Serie A'},
+            
+            # Ligue 1
+            {'key': 'psg', 'title': 'PSG', 'code': 'PSG', 'country': 'fr', 'league': 'Ligue 1'},
+            {'key': 'marseille', 'title': 'Marseille', 'code': 'OM', 'country': 'fr', 'league': 'Ligue 1'},
+            {'key': 'lyon', 'title': 'Lyon', 'code': 'OL', 'country': 'fr', 'league': 'Ligue 1'},
+            {'key': 'monaco', 'title': 'Monaco', 'code': 'ASM', 'country': 'fr', 'league': 'Ligue 1'},
         ]
         
         with sqlite3.connect(self.db_path) as conn:
             cursor = conn.cursor()
-            for team in premier_league_teams:
+            for team in all_teams:
                 cursor.execute('''
                     INSERT OR REPLACE INTO teams (key, title, code, country_key)
                     VALUES (?, ?, ?, ?)
-                ''', (team['key'], team['title'], team['code'], 'en'))
+                ''', (team['key'], team['title'], team['code'], team['country']))
             conn.commit()
         
-        print(f"✅ Loaded {len(premier_league_teams)} English teams")
+        print(f"✅ Loaded {len(all_teams)} teams from major European leagues")
     
     def _load_premier_league_events(self):
-        """Load Premier League seasons/events."""
-        print("🏆 Loading Premier League events...")
+        """Load major European league seasons/events."""
+        print("🏆 Loading major European league events...")
         
         events = [
+            # Premier League
             {'key': 'en.2024-25', 'title': 'Premier League 2024/25', 'league_key': 'en.1', 'season': '2024-25'},
             {'key': 'en.2023-24', 'title': 'Premier League 2023/24', 'league_key': 'en.1', 'season': '2023-24'},
+            # La Liga
+            {'key': 'es.2024-25', 'title': 'La Liga 2024/25', 'league_key': 'es.1', 'season': '2024-25'},
+            {'key': 'es.2023-24', 'title': 'La Liga 2023/24', 'league_key': 'es.1', 'season': '2023-24'},
+            # Bundesliga
+            {'key': 'de.2024-25', 'title': 'Bundesliga 2024/25', 'league_key': 'de.1', 'season': '2024-25'},
+            {'key': 'de.2023-24', 'title': 'Bundesliga 2023/24', 'league_key': 'de.1', 'season': '2023-24'},
+            # Serie A
+            {'key': 'it.2024-25', 'title': 'Serie A 2024/25', 'league_key': 'it.1', 'season': '2024-25'},
+            {'key': 'it.2023-24', 'title': 'Serie A 2023/24', 'league_key': 'it.1', 'season': '2023-24'},
+            # Ligue 1
+            {'key': 'fr.2024-25', 'title': 'Ligue 1 2024/25', 'league_key': 'fr.1', 'season': '2024-25'},
+            {'key': 'fr.2023-24', 'title': 'Ligue 1 2023/24', 'league_key': 'fr.1', 'season': '2023-24'},
         ]
         
         with sqlite3.connect(self.db_path) as conn:
@@ -231,10 +255,10 @@ class FootballDBScraper:
         """Load realistic player statistics based on Premier League averages."""
         print("👥 Loading player statistics...")
         
-        # Get all teams from database
+        # Get all teams from database (all leagues)
         with sqlite3.connect(self.db_path) as conn:
             cursor = conn.cursor()
-            cursor.execute("SELECT key, title FROM teams WHERE country_key = 'en'")
+            cursor.execute("SELECT key, title FROM teams")
             teams = cursor.fetchall()
             
             players_loaded = 0
@@ -324,8 +348,9 @@ class FootballDBScraper:
         return squad
     
     def _team_name_to_key(self, team_name: str) -> str:
-        """Convert team name to database key."""
+        """Convert team name to database key for all major leagues."""
         name_to_key = {
+            # Premier League
             'Arsenal': 'arsenal',
             'Chelsea': 'chelsea', 
             'Liverpool': 'liverpool',
@@ -333,27 +358,30 @@ class FootballDBScraper:
             'Manchester United': 'manutd',
             'Tottenham': 'tottenham',
             'Tottenham Hotspur': 'tottenham',
-            'Newcastle': 'newcastle',
-            'Newcastle United': 'newcastle',
-            'Aston Villa': 'astonvilla',
-            'Brighton': 'brighton',
-            'Brighton & Hove Albion': 'brighton',
-            'West Ham': 'westham',
-            'West Ham United': 'westham',
-            'Everton': 'everton',
-            'Crystal Palace': 'crystalpalace',
-            'Fulham': 'fulham',
-            'Bournemouth': 'bournemouth',
-            'AFC Bournemouth': 'bournemouth',
-            'Wolves': 'wolves',
-            'Wolverhampton': 'wolves',
-            'Nottingham Forest': 'nottmforest',
-            'Brentford': 'brentford',
-            'Leicester': 'leicester',
-            'Leicester City': 'leicester',
-            'Ipswich': 'ipswich',
-            'Ipswich Town': 'ipswich',
-            'Southampton': 'southampton'
+            
+            # La Liga
+            'Real Madrid': 'realmadrid',
+            'Barcelona': 'barcelona',
+            'Atletico Madrid': 'atletico',
+            'Sevilla': 'sevilla',
+            
+            # Bundesliga
+            'Bayern Munich': 'bayern',
+            'Borussia Dortmund': 'dortmund',
+            'RB Leipzig': 'leipzig',
+            'Bayer Leverkusen': 'leverkusen',
+            
+            # Serie A
+            'Juventus': 'juventus',
+            'AC Milan': 'milan',
+            'Inter Milan': 'inter',
+            'Napoli': 'napoli',
+            
+            # Ligue 1
+            'PSG': 'psg',
+            'Marseille': 'marseille',
+            'Lyon': 'lyon',
+            'Monaco': 'monaco'
         }
         return name_to_key.get(team_name, team_name.lower().replace(' ', ''))
     

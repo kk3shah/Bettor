@@ -62,6 +62,7 @@ def get_real_upcoming_fixtures(supported_teams):
                 if time_diff_hours < -2:  # Match finished more than 2 hours ago
                     print(f"⏰ Skipping finished match: {match_date} (finished {abs(time_diff_hours):.1f}h ago)")
                     continue
+                
                 if time_diff_hours > 168:  # Match more than 7 days (168 hours) in future
                     print(f"⏰ Skipping future match (>7d): {match_date} (in {time_diff_hours:.1f}h)")
                     continue
