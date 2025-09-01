@@ -647,52 +647,47 @@ class BettorWebService:
                     except (json.JSONDecodeError, KeyError) as e:
                         continue
             
-            if not matching_analysis:
-                return {"error": "No analysis found for this match"}
-            
-            # Filter to one bet per player with highest model probability
-            player_best_bets = {}
-            for bet in matching_analysis:
-                player = bet.get('player', 'Unknown')
-                model_prob = bet.get('model_prob', 0)
+                if not matching_analysis:
+                    return {"error": "No analysis found for this match"}
                 
-                if player not in player_best_bets or model_prob > player_best_bets[player].get('model_prob', 0):
-                    player_best_bets[player] = bet
-            
-            # Convert back to list and sort by Final Score (highest to lowest)
-            matching_analysis = list(player_best_bets.values())
-            matching_analysis.sort(key=lambda x: x.get('final_score', 0), reverse=True)
-            
-            print(f"✅ Found {len(matching_analysis)} unique players with best opportunities (sorted by Final Score)")
-            
-            # Format results for web display
-            analysis_results = {
-                "match_info": {
-                    "home_team": home_team,
-                    "away_team": away_team,
-                    "home_team_logo": get_team_logo(home_team),
-                    "away_team_logo": get_team_logo(away_team),
-                    "analysis_time": "2025-08-23T13:35:00",
-                    "lineup_source": "Real ESPN data"
-                },
-                "summary": {
-                    "total_opportunities": len(matching_analysis),
-                    "high_confidence_bets": len([bet for bet in matching_analysis if bet.get('final_score', 0) >= 60]),
-                    "medium_confidence_bets": len([bet for bet in matching_analysis if 45 <= bet.get('final_score', 0) < 60]),
-                    "data_quality": "100% Real ESPN Data",
-                    "fake_data": False
-                },
-                "opportunities": matching_analysis,
-                "top_bets": matching_analysis[:10],  # Frontend expects this
-                "all_bets": matching_analysis        # Frontend expects this
-            }
-            
-            # If no matching analysis found in CSV, generate live analysis
-            if not matching_analysis:
-                print(f"🔄 No CSV analysis found for {home_team} vs {away_team}, generating live analysis...")
-                return self._generate_live_analysis(home_team, away_team, espn_match_id)
-            
-            return analysis_results
+                # Filter to one bet per player with highest model probability
+                player_best_bets = {}
+                for bet in matching_analysis:
+                    player = bet.get('player', 'Unknown')
+                    model_prob = bet.get('model_prob', 0)
+                    
+                    if player not in player_best_bets or model_prob > player_best_bets[player].get('model_prob', 0):
+                        player_best_bets[player] = bet
+                
+                # Convert back to list and sort by Final Score (highest to lowest)
+                matching_analysis = list(player_best_bets.values())
+                matching_analysis.sort(key=lambda x: x.get('final_score', 0), reverse=True)
+                
+                print(f"✅ Found {len(matching_analysis)} unique players with best opportunities (sorted by Final Score)")
+                
+                # Format results for web display
+                analysis_results = {
+                    "match_info": {
+                        "home_team": home_team,
+                        "away_team": away_team,
+                        "home_team_logo": get_team_logo(home_team),
+                        "away_team_logo": get_team_logo(away_team),
+                        "analysis_time": "2025-08-23T13:35:00",
+                        "lineup_source": "Real ESPN data"
+                    },
+                    "summary": {
+                        "total_opportunities": len(matching_analysis),
+                        "high_confidence_bets": len([bet for bet in matching_analysis if bet.get('final_score', 0) >= 60]),
+                        "medium_confidence_bets": len([bet for bet in matching_analysis if 45 <= bet.get('final_score', 0) < 60]),
+                        "data_quality": "100% Real ESPN Data",
+                        "fake_data": False
+                    },
+                    "opportunities": matching_analysis,
+                    "top_bets": matching_analysis[:10],  # Frontend expects this
+                    "all_bets": matching_analysis        # Frontend expects this
+                }
+                
+                return analysis_results
             
         except Exception as e:
             print(f"❌ Analysis error: {e}")
