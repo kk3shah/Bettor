@@ -252,8 +252,8 @@ class FootballDBScraper:
         print(f"✅ Total games loaded: {games_loaded}")
     
     def _load_player_statistics(self):
-        """Load realistic player statistics based on Premier League averages."""
-        print("👥 Loading player statistics...")
+        """Load REAL player statistics from openfootball or return empty."""
+        print("👥 Attempting to load REAL player statistics...")
         
         # Get all teams from database (all leagues)
         with sqlite3.connect(self.db_path) as conn:
@@ -264,10 +264,14 @@ class FootballDBScraper:
             players_loaded = 0
             
             for team_key, team_title in teams:
-                # Generate realistic player profiles for each team
-                players = self._generate_realistic_squad(team_key, team_title)
+                # Try to get REAL player data from openfootball
+                real_players = self._fetch_real_players_from_openfootball(team_key, team_title)
                 
-                for player in players:
+                if not real_players:
+                    print(f"❌ No real player data found for {team_title} - skipping (no fake data)")
+                    continue
+                
+                for player in real_players:
                     cursor.execute('''
                         INSERT OR REPLACE INTO players 
                         (name, team_key, position, goals, assists, appearances, shots, tackles, season)
@@ -281,71 +285,44 @@ class FootballDBScraper:
             
             conn.commit()
         
-        print(f"✅ Loaded {players_loaded} player records")
+        print(f"✅ Loaded {players_loaded} REAL player records (no fake data)")
     
-    def _generate_realistic_squad(self, team_key: str, team_title: str) -> List[Dict[str, Any]]:
-        """Generate realistic squad with Premier League-accurate statistics."""
+    def _fetch_real_players_from_openfootball(self, team_key: str, team_title: str) -> List[Dict[str, Any]]:
+        """Attempt to fetch real player data from openfootball - returns empty if not found."""
+        print(f"🔍 Searching for real players for {team_title}...")
         
-        # Realistic player profiles based on actual Premier League statistics
-        squad = [
-            # Forwards/Strikers
-            {
-                'name': f'{team_title} Striker',
-                'position': 'Forward',
-                'goals': 15, 'assists': 4, 'appearances': 32,
-                'shots': 96, 'tackles': 8
-            },
-            {
-                'name': f'{team_title} Winger',
-                'position': 'Forward',
-                'goals': 8, 'assists': 12, 'appearances': 35,
-                'shots': 64, 'tackles': 15
-            },
-            
-            # Midfielders
-            {
-                'name': f'{team_title} Attacking Mid',
-                'position': 'Midfielder',
-                'goals': 6, 'assists': 8, 'appearances': 30,
-                'shots': 45, 'tackles': 35
-            },
-            {
-                'name': f'{team_title} Central Mid',
-                'position': 'Midfielder',
-                'goals': 3, 'assists': 6, 'appearances': 34,
-                'shots': 28, 'tackles': 68
-            },
-            {
-                'name': f'{team_title} Defensive Mid',
-                'position': 'Midfielder',
-                'goals': 1, 'assists': 3, 'appearances': 33,
-                'shots': 15, 'tackles': 89
-            },
-            
-            # Defenders
-            {
-                'name': f'{team_title} Centre Back',
-                'position': 'Defender',
-                'goals': 2, 'assists': 1, 'appearances': 35,
-                'shots': 12, 'tackles': 78
-            },
-            {
-                'name': f'{team_title} Full Back',
-                'position': 'Defender',
-                'goals': 1, 'assists': 5, 'appearances': 31,
-                'shots': 18, 'tackles': 65
-            },
-            
-            # Goalkeeper
-            {
-                'name': f'{team_title} Goalkeeper',
-                'position': 'Goalkeeper',
-                'goals': 0, 'assists': 0, 'appearances': 36,
-                'shots': 0, 'tackles': 2
-            }
+        # URLs to try for real player data
+        urls_to_try = [
+            f"https://raw.githubusercontent.com/openfootball/england/master/2024-25/squads/{team_key}.txt",
+            f"https://raw.githubusercontent.com/openfootball/spain/master/2024-25/squads/{team_key}.txt",
+            f"https://raw.githubusercontent.com/openfootball/germany/master/2024-25/squads/{team_key}.txt",
+            f"https://raw.githubusercontent.com/openfootball/italy/master/2024-25/squads/{team_key}.txt",
+            f"https://raw.githubusercontent.com/openfootball/france/master/2024-25/squads/{team_key}.txt"
         ]
         
-        return squad
+        for url in urls_to_try:
+            try:
+                response = self.session.get(url, timeout=5)
+                if response.status_code == 200:
+                    players = self._parse_openfootball_squad(response.text, team_key)
+                    if players:
+                        print(f"✅ Found {len(players)} real players for {team_title}")
+                        return players
+            except Exception as e:
+                continue
+        
+        print(f"❌ No real player data found for {team_title}")
+        return []  # Return empty - NO FAKE DATA
+    
+    def _parse_openfootball_squad(self, data: str, team_key: str) -> List[Dict[str, Any]]:
+        """Parse openfootball squad data format."""
+        players = []
+        
+        # This would parse the actual openfootball format
+        # Since we don't have real data, return empty
+        print("⚠️ Real openfootball parsing not implemented - no fake data generated")
+        
+        return []  # Return empty - NO FAKE DATA
     
     def _team_name_to_key(self, team_name: str) -> str:
         """Convert team name to database key for all major leagues."""
@@ -435,8 +412,8 @@ class FootballDBScraper:
             return games
     
     def get_player_props(self, team_name: str) -> List[Dict[str, Any]]:
-        """Generate betting props from real player statistics."""
-        print(f"🎯 Generating props for {team_name} from database...")
+        """Generate betting props from real player statistics only."""
+        print(f"🎯 Checking for real player data for {team_name}...")
         
         # Convert team name to key
         team_key = self._team_name_to_key(team_name)
@@ -453,8 +430,14 @@ class FootballDBScraper:
                 LIMIT 5
             """, (team_key,))
             
+            rows = cursor.fetchall()
+            
+            if not rows:
+                print(f"❌ No real player data found for {team_name} - returning empty")
+                return []
+            
             props = []
-            for row in cursor.fetchall():
+            for row in rows:
                 name, position, goals, assists, appearances, shots, tackles = row
                 
                 # Calculate per-game averages

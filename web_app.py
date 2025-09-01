@@ -94,30 +94,28 @@ def get_matches():
 
 @app.route('/api/analyze')
 def analyze_match():
-    """Analyze a specific match using football.db real data."""
+    """Analyze a specific match using current squad + historical data integration."""
     try:
         home_team = request.args.get('home_team', 'Manchester City')
         away_team = request.args.get('away_team', 'Arsenal')
         
-        print(f"🎯 Analyzing {home_team} vs {away_team} with football.db...")
+        print(f"🎯 Analyzing {home_team} vs {away_team} with current squad filtering...")
         
-        # Get real analysis from football.db SQLite database
-        from footballdb_scraper import FootballDBScraper
-        scraper = FootballDBScraper()
+        # Get real analysis from integrated data (current squads + historical stats)
+        from real_data_integrator import RealDataIntegrator
+        integrator = RealDataIntegrator()
         
-        # Ensure database is populated
-        if not os.path.exists(scraper.db_path):
-            print("📥 First-time setup: Populating football.db...")
-            scraper.populate_database()
+        # Update current squads (this will be cached for performance)
+        integrator.update_current_squads()
         
-        # Get player props for both teams
-        home_props = scraper.get_player_props(home_team)
-        away_props = scraper.get_player_props(away_team)
+        # Get current player props for both teams (only players still at the club)
+        home_props = integrator.get_current_player_betting_props(home_team, limit=10)
+        away_props = integrator.get_current_player_betting_props(away_team, limit=10)
         
         analysis = home_props + away_props
         
         if not analysis:
-            return jsonify({"error": "No real data available for this match"}), 404
+            return jsonify({"error": "No current players found with historical data for this match"}), 404
         
         # Convert to frontend format
         opportunities = []
@@ -140,7 +138,7 @@ def analyze_match():
                 "model_prob": model_prob,
                 "confidence": opp.get('confidence', 0.5),
                 "min_profitable_american": american_odds,
-                "source": "Real Football Data"
+                "source": "Current Squad + Historical Data"
             })
         
         return jsonify({
@@ -148,12 +146,13 @@ def analyze_match():
             "match_info": {
                 "home_team": home_team,
                 "away_team": away_team,
-                "data_source": "Football.db SQLite Database",
+                "data_source": "Current Squad (ESPN) + Historical Stats (2018-19)",
                 "generated_at": datetime.now().isoformat()
             },
             "summary": {
                 "total_opportunities": len(opportunities),
-                "data_quality": "100% Real Data from Football.db"
+                "data_quality": "100% Real Data - Current Players Only",
+                "note": "Only shows players currently at their respective clubs"
             }
         })
         
