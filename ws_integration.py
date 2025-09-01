@@ -1,56 +1,51 @@
 """
-Simplified WhoScored integration for Bettor system.
-Returns empty results when WhoScored data is unavailable (graceful fallback).
+Real football data integration using openfootball datasets.
+Provides actual Premier League data instead of WhoScored.
 """
 
 from pathlib import Path
 from typing import Dict, List, Any, Optional
 import json
 import pandas as pd
+from openfootball_scraper import OpenFootballScraper
 
 def get_whoscored_analysis(home_team: str, away_team: str) -> List[Dict[str, Any]]:
     """
-    Get betting analysis using WhoScored data.
-    Returns empty list if no data available (graceful fallback to ESPN).
+    Get betting analysis using real football data.
+    Returns betting opportunities based on actual Premier League data.
     """
     try:
-        # Check if we have cached WhoScored data
-        data_dir = Path("ws_pipeline/data")
+        print(f"🔍 Getting real football data analysis for {home_team} vs {away_team}...")
         
-        if not data_dir.exists():
-            print(f"⚠️ WhoScored data directory not found - using ESPN fallback")
+        # Use OpenFootball scraper for real data
+        scraper = OpenFootballScraper()
+        analysis = scraper.generate_betting_analysis(home_team, away_team)
+        
+        if analysis:
+            # Convert to expected format for the betting system
+            opportunities = []
+            for opp in analysis:
+                opportunities.append({
+                    'match_id': f"real_{home_team}_{away_team}",
+                    'home_team': home_team,
+                    'away_team': away_team,
+                    'player_name': opp['player_name'],
+                    'prop_type': opp['prop_type'],
+                    'rate_per_game': opp['model_prob'],
+                    'final_score': min(95, opp['model_prob'] * 100),
+                    'model_prob': opp['model_prob'],
+                    'confidence': 0.8 if opp['confidence'] == 'High' else 0.6 if opp['confidence'] == 'Medium' else 0.4,
+                    'source': 'Real Football Data'
+                })
+            
+            print(f"✅ Generated {len(opportunities)} real betting opportunities")
+            return opportunities
+        else:
+            print(f"⚠️ No real data available for {home_team} vs {away_team}")
             return []
-        
-        # Look for cached fixtures and team data
-        fixture_files = list(data_dir.glob("fixtures_*.csv"))
-        team_files = list(data_dir.glob("team_*_players.csv"))
-        
-        if not fixture_files or not team_files:
-            print(f"⚠️ No WhoScored cached data available - using ESPN fallback")
-            return []
-        
-        # Try to find the match in cached fixtures
-        for fixture_file in fixture_files:
-            try:
-                fixtures_df = pd.read_csv(fixture_file)
-                match_row = fixtures_df[
-                    (fixtures_df['home_team_name'].str.contains(home_team, case=False, na=False)) &
-                    (fixtures_df['away_team_name'].str.contains(away_team, case=False, na=False))
-                ]
-                
-                if not match_row.empty:
-                    print(f"✅ Found WhoScored data for {home_team} vs {away_team}")
-                    # Generate some sample betting opportunities from WhoScored data
-                    return _generate_whoscored_opportunities(match_row.iloc[0], team_files)
-                    
-            except Exception as e:
-                continue
-        
-        print(f"⚠️ Match {home_team} vs {away_team} not found in WhoScored cache - using ESPN fallback")
-        return []
         
     except Exception as e:
-        print(f"⚠️ WhoScored integration error: {e} - using ESPN fallback")
+        print(f"❌ Error getting real football analysis: {e}")
         return []
 
 def get_whoscored_player_stats(player_name: str, team_name: str = None) -> Optional[Dict[str, Any]]:

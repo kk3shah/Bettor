@@ -34,9 +34,24 @@ class FixturesScraper:
     
     async def setup_page(self, page: Page) -> None:
         """Set up page with stealth settings and response listeners."""
-        # Set user agent
+        # Remove webdriver property
+        await page.add_init_script("""
+            Object.defineProperty(navigator, 'webdriver', {
+                get: () => undefined,
+            });
+        """)
+        
+        # Set user agent and headers
         await page.set_extra_http_headers({
-            'User-Agent': config.get_random_user_agent()
+            'User-Agent': config.get_random_user_agent(),
+            'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8',
+            'Accept-Language': 'en-US,en;q=0.5',
+            'Accept-Encoding': 'gzip, deflate, br',
+            'Connection': 'keep-alive',
+            'Upgrade-Insecure-Requests': '1',
+            'Sec-Fetch-Dest': 'document',
+            'Sec-Fetch-Mode': 'navigate',
+            'Sec-Fetch-Site': 'none'
         })
         
         # Set viewport
@@ -70,7 +85,20 @@ class FixturesScraper:
         async with async_playwright() as p:
             browser = await p.chromium.launch(
                 headless=config.HEADLESS,
-                args=['--no-sandbox', '--disable-blink-features=AutomationControlled']
+                args=[
+                    '--no-sandbox', 
+                    '--disable-dev-shm-usage',
+                    '--disable-blink-features=AutomationControlled',
+                    '--disable-features=VizDisplayCompositor',
+                    '--disable-web-security',
+                    '--disable-features=TranslateUI',
+                    '--no-first-run',
+                    '--disable-default-apps',
+                    '--disable-popup-blocking',
+                    '--disable-hang-monitor',
+                    '--disable-backgrounding-occluded-windows',
+                    '--disable-renderer-backgrounding'
+                ]
             )
             
             try:
@@ -82,8 +110,32 @@ class FixturesScraper:
                 logger.info(f"Navigating to {config.LIVESCORES_URL}")
                 await page.goto(config.LIVESCORES_URL, wait_until='networkidle')
                 
-                # Wait for fixtures to load
-                await page.wait_for_selector('.fixture, .match-row, [data-testid*="fixture"]', timeout=30000)
+                # Wait for fixtures to load with multiple attempts
+                selectors_to_try = [
+                    '.fixture, .match-row, [data-testid*="fixture"]',
+                    '.livescore-match, .match-item, .fixture-row', 
+                    '[class*="fixture"], [class*="match"], [class*="game"]',
+                    'table tr, .table-row, .match-table tr',
+                    '.tournament-fixture, .match-center, .live-match',
+                    '[data-match-id], [data-fixture-id], .match-link',
+                    '.team-name, .team-link, [class*="team"]'
+                ]
+                
+                fixture_elements_found = False
+                for selector in selectors_to_try:
+                    try:
+                        logger.info(f"Trying selector: {selector}")
+                        await page.wait_for_selector(selector, timeout=15000)
+                        fixture_elements_found = True
+                        logger.info(f"✅ Found elements with selector: {selector}")
+                        break
+                    except Exception as e:
+                        logger.info(f"⚠️ Selector failed: {selector} - {e}")
+                        continue
+                
+                if not fixture_elements_found:
+                    logger.warning("No fixture elements found with any selector, continuing anyway...")
+                
                 await utils.random_delay()
                 
                 # Try to extract from JSON responses first

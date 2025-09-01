@@ -15,10 +15,10 @@ VIEWPORT_WIDTH = 1920
 VIEWPORT_HEIGHT = 1080
 
 # Rate limiting and delays
-MIN_DELAY = 3.0  # minimum seconds between requests
-MAX_DELAY = 7.0  # maximum seconds between requests
-PAGE_LOAD_TIMEOUT = 30000  # milliseconds
-NETWORK_IDLE_TIMEOUT = 5000  # milliseconds
+MIN_DELAY = 5.0  # minimum seconds between requests
+MAX_DELAY = 12.0  # maximum seconds between requests
+PAGE_LOAD_TIMEOUT = 60000  # milliseconds - increased for slow loading
+NETWORK_IDLE_TIMEOUT = 10000  # milliseconds - wait longer for content
 
 # Concurrency
 MAX_CONCURRENT_PAGES = int(os.getenv("WS_MAX_CONCURRENT", "2"))
