@@ -62,8 +62,8 @@ def get_real_upcoming_fixtures(supported_teams):
                 if time_diff_hours < -2:  # Match finished more than 2 hours ago
                     print(f"⏰ Skipping finished match: {match_date} (finished {abs(time_diff_hours):.1f}h ago)")
                     continue
-                if time_diff_hours > 24:  # Match more than 24 hours in future
-                    print(f"⏰ Skipping future match (>24h): {match_date} (in {time_diff_hours:.1f}h)")
+                if time_diff_hours > 168:  # Match more than 7 days (168 hours) in future
+                    print(f"⏰ Skipping future match (>7d): {match_date} (in {time_diff_hours:.1f}h)")
                     continue
                 
                 if time_diff_hours <= 0:
@@ -123,40 +123,7 @@ def get_real_upcoming_fixtures(supported_teams):
         print(f"ERROR: Error fetching fixtures: {e}")
         return []
 
-def create_fallback_fixtures(supported_teams):
-    """Create fallback fixtures if no real matches are found."""
-    print("🔄 Creating fallback fixtures for testing...")
-    
-    # Create some realistic upcoming fixtures
-    now = datetime.now()
-    fixtures = []
-    
-    # Common Premier League matchups
-    matchups = [
-        ('Arsenal', 'Chelsea'),
-        ('Manchester United', 'Liverpool'), 
-        ('Manchester City', 'Tottenham Hotspur'),
-        ('Newcastle United', 'Aston Villa'),
-        ('Brighton & Hove Albion', 'West Ham United'),
-        ('Everton', 'Crystal Palace'),
-        ('Fulham', 'AFC Bournemouth')
-    ]
-    
-    for i, (home, away) in enumerate(matchups):
-        if home in supported_teams and away in supported_teams:
-            kickoff = now + timedelta(hours=2 + i*3)  # Spread matches over next 24 hours
-            
-            fixture = {
-                'home_team': home,
-                'away_team': away,
-                'league': 'Premier League',
-                'kickoff_time': kickoff.isoformat()
-            }
-            
-            fixtures.append(fixture)
-            print(f"SUCCESS: Added fallback match: {home} vs {away} at {kickoff}")
-    
-    return fixtures
+# Fallback fixture creation removed - NO FAKE DATA POLICY
 
 def populate_matches_csv(matches):
     """Populate matches.csv with real supported matches."""
@@ -204,10 +171,10 @@ def main():
     # Get real fixtures from ESPN
     fixtures = get_real_upcoming_fixtures(supported_teams)
     
-    # If no real fixtures found, create fallback fixtures
+    # If no real fixtures found, return empty - NO FAKE DATA
     if not fixtures:
-        print("WARNING: No real upcoming fixtures found, creating fallback fixtures...")
-        fixtures = create_fallback_fixtures(supported_teams)
+        print("❌ No real upcoming fixtures found - no fake data will be created")
+        return  # Exit without creating any fake data
     
     if not fixtures:
         print("ERROR: No fixtures available")
@@ -219,7 +186,7 @@ def main():
     print(f"\nSUCCESS: PREMIER LEAGUE MATCH POPULATION COMPLETE!")
     print(f"   INFO: {len(fixtures)} matches stored")
     print(f"   INFO: Only supported teams included")
-    print(f"   INFO: Next 24 hours coverage")
+    print(f"   INFO: Next 7 days coverage")
 
 if __name__ == "__main__":
     main()
